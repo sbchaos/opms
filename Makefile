@@ -9,9 +9,9 @@ MAKEFLAGS += --no-builtin-rules
 vet: ## run go vet
 	go vet ./...
 
-build: # build optimus binary
+build: # build opms binary
 	@echo " > building opms binary"
-	@go build -ldflags -o opms .
+	@go build -o opms .
 	@echo " - build complete"
 
 test:

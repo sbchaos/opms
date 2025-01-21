@@ -2,6 +2,8 @@ package cmd
 
 import (
 	cli "github.com/spf13/cobra"
+
+	"github.com/sbchaos/opms/cmd/mc"
 )
 
 // New constructs the 'root' command. It houses all other sub commands
@@ -13,9 +15,7 @@ func New() *cli.Command {
 		Use:          "opms <command> <subcommand> [flags]",
 		Long:         "",
 		SilenceUsage: true,
-		Example: `
-				$ opms project list
-			`,
+		Example:      "$ opms mc project list",
 		Annotations: map[string]string{
 			"group:core": "true",
 			"help:learn": `
@@ -24,7 +24,9 @@ func New() *cli.Command {
 		},
 	}
 
-	cmd.AddCommand()
+	cmd.AddCommand(
+		mc.NewMaxcomputeCommand(),
+	)
 
 	return cmd
 }
