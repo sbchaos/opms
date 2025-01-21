@@ -1,0 +1,10 @@
+run:
+  timeout: 5m
+  go: "1.23"
+linters-settings:
+  gofumpt:
+    extra-rules: true
+  goimports:
+    local-prefixes: github.com/sbchaos/opms
+severity:
+  default-severity: error
