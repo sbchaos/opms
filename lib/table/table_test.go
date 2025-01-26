@@ -7,8 +7,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/MakeNowJust/heredoc"
 )
 
 func ExampleTablePrinter() {
@@ -98,10 +96,10 @@ func Test_ttyTablePrinter_AddHeader(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	expected := heredoc.Docf(`
-		%[1]s[4mONE  %[1]s[m  %[1]s[4mTWO      %[1]s[m  %[1]s[4mTHREE%[1]s[m
+	expected := `
+		\x1b[4mONE  \x1b[m  \x1b[4mTWO      \x1b[m  \x1b[4mTHREE\x1b[m
 		hello  beautiful  people
-	`, "\x1b")
+	`
 	if buf.String() != expected {
 		t.Errorf("expected: %q, got: %q", expected, buf.String())
 	}
@@ -127,10 +125,10 @@ func Test_ttyTablePrinter_WithPadding(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	expected := heredoc.Doc(`
+	expected := `
 		  A        B        C   
 		hello  beautiful  people
-	`)
+	`
 	if buf.String() != expected {
 		t.Errorf("expected: %q, got: %q", expected, buf.String())
 	}

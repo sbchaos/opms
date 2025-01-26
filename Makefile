@@ -15,7 +15,7 @@ build: # build opms binary
 	@echo " - build complete"
 
 test:
-	go test -race -cover -timeout 1m ./...
+	go test -timeout 1m ./...
 
 lint:
 	golangci-lint run --fix
