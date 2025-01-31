@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/sbchaos/opms/cmd/mc/project"
+	"github.com/sbchaos/opms/cmd/mc/tables"
 )
 
 func NewMaxcomputeCommand() *cobra.Command {
@@ -15,6 +16,7 @@ func NewMaxcomputeCommand() *cobra.Command {
 
 	cmd.AddCommand(
 		project.NewProjectCommand(),
+		tables.NewTableCommand(),
 	)
 	return cmd
 }

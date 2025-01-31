@@ -22,6 +22,7 @@ func NewClient(creds string) (*odps.Odps, error) {
 
 	aliAccount := account.NewAliyunAccount(c1.AccessID, c1.AccessKey)
 	odpsIns := odps.NewOdps(aliAccount, c1.Endpoint)
+	odpsIns.SetDefaultProjectName(c1.ProjectName)
 
 	return odpsIns, nil
 }

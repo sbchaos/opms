@@ -26,7 +26,7 @@ func NewListCommand() *cobra.Command {
 		RunE:    list.RunE,
 	}
 
-	cmd.Flags().StringVarP(&list.namePrefix, "prefix", "p", "", "Project name prefix")
+	cmd.Flags().StringVarP(&list.namePrefix, "prefix", "n", "", "Project name prefix")
 	cmd.Flags().StringVarP(&list.credStr, "creds", "c", "", "Credentials in json format")
 	return cmd
 }
