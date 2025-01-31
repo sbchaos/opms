@@ -11,6 +11,8 @@ func NewProjectCommand() *cobra.Command {
 		Short:   "Commands that will let the user to operate on project",
 		Example: "opms project [sub-command]",
 	}
-	cmd.AddCommand()
+	cmd.AddCommand(
+		NewListCommand(),
+	)
 	return cmd
 }
