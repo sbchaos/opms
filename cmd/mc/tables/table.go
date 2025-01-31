@@ -13,6 +13,7 @@ func NewTableCommand() *cobra.Command {
 	}
 	cmd.AddCommand(
 		NewListCommand(),
+		NewExistsCommand(),
 	)
 
 	return cmd
