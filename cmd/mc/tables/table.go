@@ -15,6 +15,7 @@ func NewTableCommand() *cobra.Command {
 		NewListCommand(),
 		NewExistsCommand(),
 		NewDropCommand(),
+		NewReadCommand(),
 	)
 
 	return cmd
