@@ -14,6 +14,7 @@ func NewTableCommand() *cobra.Command {
 	cmd.AddCommand(
 		NewListCommand(),
 		NewExistsCommand(),
+		NewDropCommand(),
 	)
 
 	return cmd
