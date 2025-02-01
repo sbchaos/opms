@@ -4,21 +4,24 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
+	"time"
 
 	"github.com/aliyun/aliyun-odps-go-sdk/odps"
 	"github.com/spf13/cobra"
 
 	mcc "github.com/sbchaos/opms/external/mc"
 	"github.com/sbchaos/opms/lib/cmdutil"
+	"github.com/sbchaos/opms/lib/list"
 	"github.com/sbchaos/opms/lib/table"
 	"github.com/sbchaos/opms/lib/term"
 )
 
-type ProjectSchema struct {
-	ProjectName string
-	SchemaName  string
-}
+var (
+	connErr            = "connection reset by peer"
+	notExistErrorRegex = regexp.MustCompile(`Table (\S*) does not exist`)
+)
 
 type existsCommand struct {
 	credStr string
@@ -57,17 +60,14 @@ func (r *existsCommand) RunE(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	mapping := make(map[ProjectSchema][]string)
+	mapping := make(map[mcc.ProjectSchema][]string)
 	if r.name != "" {
-		parts, err := splitName(r.name)
+		ps, name, err := mcc.SplitParts(r.name)
 		if err != nil {
 			return err
 		}
 
-		mapping[ProjectSchema{
-			ProjectName: parts[0],
-			SchemaName:  parts[1],
-		}] = []string{parts[2]}
+		mapping[ps] = []string{name}
 
 		if r.fileName != "" {
 			return errors.New("--filename flag cannot be used along with name")
@@ -81,17 +81,12 @@ func (r *existsCommand) RunE(_ *cobra.Command, _ []string) error {
 		}
 		fields := strings.Fields(string(content))
 		for _, field := range fields {
-			nameParts, err := splitName(field)
+			ps, name, err := mcc.SplitParts(field)
 			if err != nil {
 				fmt.Printf("ignoring invalid table name %s\n", field)
 			}
 
-			ps := ProjectSchema{
-				ProjectName: nameParts[0],
-				SchemaName:  nameParts[1],
-			}
-
-			mapping[ps] = append(mapping[ps], nameParts[2])
+			mapping[ps] = append(mapping[ps], name)
 		}
 	}
 
@@ -102,12 +97,11 @@ func (r *existsCommand) RunE(_ *cobra.Command, _ []string) error {
 		client.SetCurrentSchemaName(ps.SchemaName)
 
 		lenTables := len(tables)
-		if lenTables < 10 {
-			forEvery(printer, client.Tables(), ps, tables)
-		} else {
-			for i := 0; i < lenTables; i = i + 50 {
-				end := min(i+50, lenTables)
-				forN(50, printer, client.Tables(), ps, tables[i:end])
+		for i := 0; i < lenTables; i = i + 100 {
+			end := min(i+100, lenTables)
+			err := forN(100, printer, client.Tables(), ps, tables[i:end])
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -119,57 +113,48 @@ func (r *existsCommand) RunE(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func forEvery(printer table.Printer, tabs *odps.Tables, ps ProjectSchema, tables []string) {
-	for _, t1 := range tables {
-		tres, err := tabs.BatchLoadTables([]string{t1})
-		if err != nil {
-			failureStatus(printer, ps, t1)
-		} else {
-			successStatus(printer, ps, tres)
-		}
-	}
-}
-
-func forN(step int, printer table.Printer, tabs *odps.Tables, ps ProjectSchema, tables []string) {
+func forN(step int, printer table.Printer, tabs *odps.Tables, ps mcc.ProjectSchema, tables []string) error {
 	lenTables := len(tables)
 	for i := 0; i < lenTables; i = i + step {
 		end := min(i+step, lenTables)
-		loadTables, err := tabs.BatchLoadTables(tables[i:end])
-		if err == nil {
-			// If no error mark all as success
-			successStatus(printer, ps, loadTables)
-			continue
-		} else {
-			fmt.Printf("error in batch: %s, trying smaller size", err)
-			forEvery(printer, tabs, ps, tables)
+		batch := tables[i:end]
+
+		for {
+			loadTables, err := tabs.BatchLoadTables(batch)
+			if err != nil {
+				if strings.Contains(err.Error(), connErr) {
+					time.Sleep(500 * time.Millisecond)
+					continue
+				}
+
+				submatch := notExistErrorRegex.FindStringSubmatch(err.Error())
+				if len(submatch[0]) > 0 {
+					failureStatus(printer, ps, submatch[1])
+					batch = list.Remove(batch, submatch[1])
+					continue
+				}
+				return err
+			} else {
+				successStatus(printer, ps, loadTables)
+				break
+			}
 		}
 	}
+	return nil
 }
 
-func splitName(name string) ([]string, error) {
-	parts := strings.Split(name, ".")
-	if len(parts) < 3 {
-		return parts, errors.New("invalid table name")
-	}
-
-	return parts, nil
-}
-
-func failureStatus(printer table.Printer, ps ProjectSchema, table string) {
+func failureStatus(printer table.Printer, ps mcc.ProjectSchema, table string) {
 	printer.AddField(" ❌ ")
-	printer.AddField(ps.ProjectName + "." + ps.SchemaName + "." + table)
+	printer.AddField(ps.Table(table))
 	printer.EndRow()
 }
 
-func successStatus(printer table.Printer, ps ProjectSchema, tables []*odps.Table) {
-	prefix := ps.ProjectName + "." + ps.SchemaName + "."
+func successStatus(printer table.Printer, ps mcc.ProjectSchema, tables []*odps.Table) {
 	printer.AddHeader([]string{"Exists", "Table Name"})
 
 	for _, t1 := range tables {
 		printer.AddField(" ✅ ")
-		printer.AddField(prefix + t1.Name())
+		printer.AddField(ps.Table(t1.Name()))
 		printer.EndRow()
 	}
 }
-
-// p_gopay_id_mart.gopay_consolidated.external_payment_dashboard_service_type_reference_flag
