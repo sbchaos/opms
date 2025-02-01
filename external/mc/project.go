@@ -28,5 +28,5 @@ func SplitParts(name string) (ProjectSchema, string, error) {
 		ProjectName: parts[0],
 		SchemaName:  parts[1],
 	}
-	return ps, parts[3], nil
+	return ps, parts[2], nil
 }
