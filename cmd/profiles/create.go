@@ -2,6 +2,7 @@ package profiles
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -13,19 +14,24 @@ import (
 	"github.com/sbchaos/opms/lib/keyring"
 )
 
+type createCommand struct {
+	cfg *config.Config
+}
+
 // NewCreateProfileCommand returns data from the table
-func NewCreateProfileCommand(*config.Config) *cobra.Command {
+func NewCreateProfileCommand(cfg *config.Config) *cobra.Command {
+	c := &createCommand{cfg: cfg}
 	cmd := &cobra.Command{
 		Use:     "new",
 		Short:   "Create a new profile",
 		Example: "opms profile new",
-		RunE:    CreateProfile,
+		RunE:    c.RunE,
 	}
 
 	return cmd
 }
 
-func CreateProfile(_ *cobra.Command, _ []string) error {
+func (c createCommand) RunE(_ *cobra.Command, _ []string) error {
 	//t := term.FromEnv(0, 0)
 	reader := bufio.NewReader(os.Stdin)
 	profile := config.Profiles{}
@@ -37,6 +43,12 @@ func CreateProfile(_ *cobra.Command, _ []string) error {
 	}
 	nameInput = strings.TrimSpace(nameInput)
 	profile.Name = nameInput
+
+	for _, pf := range c.cfg.AvailableProfiles {
+		if pf.Name == nameInput {
+			return errors.New("profile already exists")
+		}
+	}
 
 	key, err := StoreCredsFor(reader, nameInput, "GCP")
 	if err == nil {
@@ -50,17 +62,10 @@ func CreateProfile(_ *cobra.Command, _ []string) error {
 		fmt.Printf("Stored creds for Maxcompute\n")
 	}
 
-	read, err := config.Read(config.DefaultConfig())
-	if err != nil {
-		fmt.Printf("Error reading config: %s\n", err)
-	}
+	c.cfg.AvailableProfiles = append(c.cfg.AvailableProfiles, profile)
+	c.cfg.CurrentProfile = profile.Name
 
-	read.AvailableProfiles = append(read.AvailableProfiles, profile)
-	if len(read.AvailableProfiles) == 1 {
-		read.CurrentProfile = profile.Name
-	}
-
-	err = config.Write(read)
+	err = config.Write(c.cfg)
 	if err != nil {
 		fmt.Printf("Error writing config: %s\n", err)
 	}
