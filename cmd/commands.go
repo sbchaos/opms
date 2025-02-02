@@ -4,13 +4,15 @@ import (
 	cli "github.com/spf13/cobra"
 
 	"github.com/sbchaos/opms/cmd/mc"
+	"github.com/sbchaos/opms/cmd/profiles"
+	"github.com/sbchaos/opms/lib/config"
 )
 
 // New constructs the 'root' command. It houses all other sub commands
 // default output of logging should go to stdout
 // interactive output like progress bars should go to stderr
 // unless the stdout/err is a tty, colors/progressbar should be disabled
-func New() *cli.Command {
+func New(cfg *config.Config) *cli.Command {
 	cmd := &cli.Command{
 		Use:          "opms <command> <subcommand> [flags]",
 		Long:         "",
@@ -26,6 +28,8 @@ func New() *cli.Command {
 
 	cmd.AddCommand(
 		mc.NewMaxcomputeCommand(),
+		profiles.NewProfilesCommand(cfg),
+
 	)
 
 	return cmd
