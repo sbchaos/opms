@@ -14,7 +14,7 @@ import (
 )
 
 // NewCreateProfileCommand returns data from the table
-func NewCreateProfileCommand() *cobra.Command {
+func NewCreateProfileCommand(*config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "new",
 		Short:   "Create a new profile",

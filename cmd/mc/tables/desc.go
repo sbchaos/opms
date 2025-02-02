@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	mcc "github.com/sbchaos/opms/external/mc"
+	"github.com/sbchaos/opms/lib/config"
 )
 
 type descCommand struct {
@@ -16,7 +17,7 @@ type descCommand struct {
 }
 
 // NewDescCommand returns data from the table
-func NewDescCommand() *cobra.Command {
+func NewDescCommand(*config.Config) *cobra.Command {
 	ec := &descCommand{}
 
 	cmd := &cobra.Command{

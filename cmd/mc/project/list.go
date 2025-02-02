@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	mcc "github.com/sbchaos/opms/external/mc"
+	"github.com/sbchaos/opms/lib/config"
 )
 
 type listCommand struct {
@@ -16,7 +17,7 @@ type listCommand struct {
 
 // NewListCommand initializes command to list the projects
 // Does not work reliably when one account used across projects
-func NewListCommand() *cobra.Command {
+func NewListCommand(cfg *config.Config) *cobra.Command {
 	list := &listCommand{}
 
 	cmd := &cobra.Command{

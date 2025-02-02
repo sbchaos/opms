@@ -11,6 +11,7 @@ import (
 
 	mcc "github.com/sbchaos/opms/external/mc"
 	"github.com/sbchaos/opms/lib/cmdutil"
+	"github.com/sbchaos/opms/lib/config"
 	"github.com/sbchaos/opms/lib/table"
 	"github.com/sbchaos/opms/lib/term"
 )
@@ -23,7 +24,7 @@ type dropCommand struct {
 }
 
 // NewDropCommand checks if the tables exist
-func NewDropCommand() *cobra.Command {
+func NewDropCommand(*config.Config) *cobra.Command {
 	ec := &dropCommand{}
 
 	cmd := &cobra.Command{

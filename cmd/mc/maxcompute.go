@@ -5,9 +5,10 @@ import (
 
 	"github.com/sbchaos/opms/cmd/mc/project"
 	"github.com/sbchaos/opms/cmd/mc/tables"
+	"github.com/sbchaos/opms/lib/config"
 )
 
-func NewMaxcomputeCommand() *cobra.Command {
+func NewMaxcomputeCommand(cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "mc",
 		Short:   "Commands for managing maxcompute related data",
@@ -15,8 +16,8 @@ func NewMaxcomputeCommand() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		project.NewProjectCommand(),
-		tables.NewTableCommand(),
+		project.NewProjectCommand(cfg),
+		tables.NewTableCommand(cfg),
 	)
 	return cmd
 }

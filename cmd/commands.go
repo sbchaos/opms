@@ -27,7 +27,7 @@ func New(cfg *config.Config) *cli.Command {
 	}
 
 	cmd.AddCommand(
-		mc.NewMaxcomputeCommand(),
+		mc.NewMaxcomputeCommand(cfg),
 		profiles.NewProfilesCommand(cfg),
 
 	)
