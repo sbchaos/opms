@@ -11,14 +11,15 @@ import (
 )
 
 type listCommand struct {
+	cfg *config.Config
+
 	namePrefix string
-	credStr    string
 }
 
 // NewListCommand initializes command to list the projects
 // Does not work reliably when one account used across projects
 func NewListCommand(cfg *config.Config) *cobra.Command {
-	list := &listCommand{}
+	list := &listCommand{cfg: cfg}
 
 	cmd := &cobra.Command{
 		Use:     "list",
@@ -28,12 +29,11 @@ func NewListCommand(cfg *config.Config) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&list.namePrefix, "prefix", "n", "", "Project name prefix")
-	cmd.Flags().StringVarP(&list.credStr, "creds", "c", "", "Credentials in json format")
 	return cmd
 }
 
 func (r *listCommand) RunE(_ *cobra.Command, _ []string) error {
-	client, err := mcc.NewClient(r.credStr)
+	client, err := mcc.NewClientFromConfig(r.cfg)
 	if err != nil {
 		return err
 	}

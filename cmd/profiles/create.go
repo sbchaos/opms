@@ -51,13 +51,13 @@ func (c createCommand) RunE(_ *cobra.Command, _ []string) error {
 	}
 
 	key, err := StoreCredsFor(reader, nameInput, "GCP")
-	if err == nil {
+	if err == nil && key != "" {
 		profile.GCPCred = key
 		fmt.Printf("Stored creds for GCP\n")
 	}
 
 	key, err = StoreCredsFor(reader, nameInput, "Maxcompute")
-	if err == nil {
+	if err == nil && key != "" {
 		profile.MCCred = key
 		fmt.Printf("Stored creds for Maxcompute\n")
 	}

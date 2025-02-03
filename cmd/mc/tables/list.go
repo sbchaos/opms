@@ -15,7 +15,7 @@ import (
 )
 
 type listCommand struct {
-	credStr string
+	cfg *config.Config
 
 	project string
 	schema  string
@@ -26,8 +26,8 @@ type listCommand struct {
 
 // NewListCommand initializes command to list the projects
 // Does not work reliably when one account used across projects
-func NewListCommand(*config.Config) *cobra.Command {
-	list := &listCommand{}
+func NewListCommand(cfg *config.Config) *cobra.Command {
+	list := &listCommand{cfg: cfg}
 
 	cmd := &cobra.Command{
 		Use:     "list",
@@ -35,8 +35,6 @@ func NewListCommand(*config.Config) *cobra.Command {
 		Example: "opms mc tables list",
 		RunE:    list.RunE,
 	}
-
-	cmd.Flags().StringVarP(&list.credStr, "creds", "c", "", "Credentials in json format")
 
 	cmd.Flags().StringVarP(&list.project, "project", "p", "", "Project")
 	cmd.Flags().StringVarP(&list.schema, "schema", "s", "", "Schema")
@@ -47,7 +45,7 @@ func NewListCommand(*config.Config) *cobra.Command {
 }
 
 func (r *listCommand) RunE(_ *cobra.Command, _ []string) error {
-	client, err := mcc.NewClient(r.credStr)
+	client, err := mcc.NewClientFromConfig(r.cfg)
 	if err != nil {
 		return err
 	}

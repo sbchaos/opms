@@ -25,15 +25,15 @@ var (
 )
 
 type existsCommand struct {
-	credStr string
+	cfg *config.Config
 
 	name     string
 	fileName string
 }
 
 // NewExistsCommand checks if the tables exist
-func NewExistsCommand(*config.Config) *cobra.Command {
-	ec := &existsCommand{}
+func NewExistsCommand(cfg *config.Config) *cobra.Command {
+	ec := &existsCommand{cfg: cfg}
 
 	cmd := &cobra.Command{
 		Use:     "exists",
@@ -41,8 +41,6 @@ func NewExistsCommand(*config.Config) *cobra.Command {
 		Example: "opms mc tables exists",
 		RunE:    ec.RunE,
 	}
-
-	cmd.Flags().StringVarP(&ec.credStr, "creds", "c", "", "Credentials in json format")
 
 	cmd.Flags().StringVarP(&ec.name, "name", "n", "", "Table name")
 	cmd.Flags().StringVarP(&ec.fileName, "filename", "f", "", "Filename with list of tables, - for stdin")
@@ -56,7 +54,7 @@ func (r *existsCommand) RunE(_ *cobra.Command, _ []string) error {
 		size = 120
 	}
 
-	client, err := mcc.NewClient(r.credStr)
+	client, err := mcc.NewClientFromConfig(r.cfg)
 	if err != nil {
 		return err
 	}

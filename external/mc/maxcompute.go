@@ -2,9 +2,20 @@ package mc
 
 import (
 	"encoding/json"
+	"errors"
+	"os"
+	"strings"
+	"time"
 
 	"github.com/aliyun/aliyun-odps-go-sdk/odps"
 	"github.com/aliyun/aliyun-odps-go-sdk/odps/account"
+
+	"github.com/sbchaos/opms/lib/config"
+	"github.com/sbchaos/opms/lib/keyring"
+)
+
+const (
+	MaxcomputeAccount = "MAXCOMPUTE_ACCOUNT"
 )
 
 type maxComputeCredentials struct {
@@ -12,6 +23,26 @@ type maxComputeCredentials struct {
 	AccessKey   string `json:"access_key"`
 	Endpoint    string `json:"mc_endpoint"`
 	ProjectName string `json:"project_name"`
+}
+
+func NewClientFromConfig(cfg *config.Config) (*odps.Odps, error) {
+	mcCreds := os.Getenv(MaxcomputeAccount)
+	if a := os.Getenv(mcCreds); a != "" {
+		return NewClient(mcCreds)
+	}
+
+	profile := cfg.GetCurrentProfile()
+	key := profile.MCCred
+	if key == "" {
+		return nil, errors.New("key not found for Maxcompute account")
+	}
+
+	acc, err := keyring.Get(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewClient(acc)
 }
 
 func NewClient(creds string) (*odps.Odps, error) {

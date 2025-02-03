@@ -11,14 +11,14 @@ import (
 )
 
 type descCommand struct {
-	credStr string
+	cfg *config.Config
 
 	name string
 }
 
 // NewDescCommand returns data from the table
-func NewDescCommand(*config.Config) *cobra.Command {
-	ec := &descCommand{}
+func NewDescCommand(cfg *config.Config) *cobra.Command {
+	ec := &descCommand{cfg: cfg}
 
 	cmd := &cobra.Command{
 		Use:     "desc",
@@ -27,15 +27,13 @@ func NewDescCommand(*config.Config) *cobra.Command {
 		RunE:    ec.RunE,
 	}
 
-	cmd.Flags().StringVarP(&ec.credStr, "creds", "c", "", "Credentials in json format")
-
 	cmd.Flags().StringVarP(&ec.name, "name", "n", "", "Table name")
 	cmd.MarkFlagRequired("name")
 	return cmd
 }
 
 func (r *descCommand) RunE(_ *cobra.Command, _ []string) error {
-	client, err := mcc.NewClient(r.credStr)
+	client, err := mcc.NewClientFromConfig(r.cfg)
 	if err != nil {
 		return err
 	}

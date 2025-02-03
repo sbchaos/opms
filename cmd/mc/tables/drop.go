@@ -17,15 +17,15 @@ import (
 )
 
 type dropCommand struct {
-	credStr string
+	cfg *config.Config
 
 	name     string
 	fileName string
 }
 
 // NewDropCommand checks if the tables exist
-func NewDropCommand(*config.Config) *cobra.Command {
-	ec := &dropCommand{}
+func NewDropCommand(cfg *config.Config) *cobra.Command {
+	ec := &dropCommand{cfg: cfg}
 
 	cmd := &cobra.Command{
 		Use:     "drop",
@@ -33,8 +33,6 @@ func NewDropCommand(*config.Config) *cobra.Command {
 		Example: "opms mc tables drop",
 		RunE:    ec.RunE,
 	}
-
-	cmd.Flags().StringVarP(&ec.credStr, "creds", "c", "", "Credentials in json format")
 
 	cmd.Flags().StringVarP(&ec.name, "name", "n", "", "Table name")
 	cmd.Flags().StringVarP(&ec.fileName, "filename", "f", "", "Filename with list of tables, - for stdin")
@@ -48,7 +46,7 @@ func (r *dropCommand) RunE(_ *cobra.Command, _ []string) error {
 		size = 120
 	}
 
-	client, err := mcc.NewClient(r.credStr)
+	client, err := mcc.NewClientFromConfig(r.cfg)
 	if err != nil {
 		return err
 	}

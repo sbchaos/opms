@@ -193,3 +193,19 @@ func writeFile(filename string, data []byte) (writeErr error) {
 	_, writeErr = file.Write(data)
 	return
 }
+
+func (c *Config) GetCurrentProfile() Profiles {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	if len(c.AvailableProfiles) < 1 {
+		return Profiles{}
+	}
+
+	for _, p := range c.AvailableProfiles {
+		if p.Name == c.CurrentProfile {
+			return p
+		}
+	}
+	return c.AvailableProfiles[0]
+}
