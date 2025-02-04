@@ -14,7 +14,10 @@ func NewUDFCommand(cfg *config.Config) *cobra.Command {
 		Example: "opms mc udf [sub-command]",
 	}
 	cmd.AddCommand(
+		NewCreateCommand(cfg),
 		NewGetCommand(cfg),
+		NewDropCommand(cfg),
+		NewUpdateCommand(cfg),
 	)
 	return cmd
 }
