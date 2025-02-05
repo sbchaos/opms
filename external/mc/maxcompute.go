@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"strings"
-	"time"
 
 	"github.com/aliyun/aliyun-odps-go-sdk/odps"
 	"github.com/aliyun/aliyun-odps-go-sdk/odps/account"

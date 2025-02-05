@@ -41,10 +41,10 @@ var (
 )
 
 type Config struct {
-	Version           string       `json:"version"`
-	CurrentProfile    string       `json:"current_profile"`
-	AvailableProfiles []Profiles   `json:"available_profiles"`
-	Aliases           *AliasConfig `json:"aliases"`
+	Version           string     `json:"version"`
+	CurrentProfile    string     `json:"current_profile"`
+	AvailableProfiles []Profiles `json:"available_profiles"`
+	//Aliases           *AliasConfig `json:"aliases"`
 	//AuthConfig        *AuthConfig  `json:"auth"`
 	mu sync.RWMutex
 }
