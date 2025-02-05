@@ -1,0 +1,189 @@
+package verify
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/aliyun/aliyun-odps-go-sdk/odps"
+	"github.com/spf13/cobra"
+
+	mcc "github.com/sbchaos/opms/external/mc"
+	"github.com/sbchaos/opms/lib/cmdutil"
+	"github.com/sbchaos/opms/lib/config"
+	"github.com/sbchaos/opms/lib/table"
+	"github.com/sbchaos/opms/lib/term"
+)
+
+var (
+	connErr = "connection reset by peer"
+
+	countSQL    = `SELECT count(*) FROM `
+	queryFields = `SELECT * FROM `
+)
+
+type externalTableCommand struct {
+	cfg *config.Config
+
+	name     string
+	fileName string
+}
+
+// NewExternalTableCommand checks if the tables exist
+func NewExternalTableCommand(cfg *config.Config) *cobra.Command {
+	ec := &externalTableCommand{cfg: cfg}
+
+	cmd := &cobra.Command{
+		Use:     "externalTable",
+		Short:   "Verify the externalTable in maxcompute",
+		Example: "opms mc verify externalTable",
+		RunE:    ec.RunE,
+	}
+
+	cmd.Flags().StringVarP(&ec.name, "name", "n", "", "Table name")
+	cmd.Flags().StringVarP(&ec.fileName, "filename", "f", "", "Filename with list of tables, - for stdin")
+	return cmd
+}
+
+func (r *externalTableCommand) RunE(_ *cobra.Command, _ []string) error {
+	errMap := map[string]error{}
+
+	t := term.FromEnv(0, 0)
+	size, _, err := t.Size()
+	if err != nil {
+		size = 120
+	}
+
+	client, err := mcc.NewClientFromConfig(r.cfg)
+	if err != nil {
+		return err
+	}
+
+	tables := make([]string, 0)
+	if r.name != "" {
+		tables = append(tables, r.name)
+		if r.fileName != "" {
+			return errors.New("--filename flag cannot be used along with name")
+		}
+	}
+
+	if r.fileName != "" {
+		content, err := cmdutil.ReadFile(r.fileName, os.Stdin)
+		if err != nil {
+			return err
+		}
+
+		fields := strings.Fields(string(content))
+		for _, field := range fields {
+			tables = append(tables, field)
+		}
+	}
+
+	printer := table.New(os.Stdout, t.IsTerminalOutput(), size)
+	printer.AddHeader([]string{"Status", "Table Name", "COUNT*", "SIZE", "Error"})
+
+	for _, t1 := range tables {
+		err = r.Validate(client, printer, t1)
+		if err != nil {
+			errMap[t1] = err
+		}
+	}
+
+	err = printer.Render()
+	if err != nil {
+		return fmt.Errorf("failed to print table: %w", err)
+	}
+
+	if len(errMap) > 0 {
+		fmt.Fprintln(os.Stderr, "Error(s) encountered:")
+		for n, err := range errMap {
+			fmt.Fprintf(os.Stderr, "Name: %s, Err: %s\n", n, err)
+		}
+	}
+
+	return nil
+}
+
+func (r *externalTableCommand) Validate(client *odps.Odps, printer table.Printer, name string) error {
+	success := false
+	countStar := -1
+	countRow := 0
+
+	countStarQry := countSQL + name + ";"
+	res, err := runQuery(client, countStarQry)
+	if err == nil {
+		parts := strings.Split(res, "\n")
+		if len(parts) > 1 {
+			val, err2 := strconv.Atoi(parts[1])
+			if err2 == nil {
+				countStar = val
+			}
+		}
+	}
+
+	countFieldsQry := queryFields + name + ";"
+	res2, err := runQuery(client, countFieldsQry)
+	if err == nil {
+		parts := strings.Split(res2, "\n")
+		for i, field := range parts {
+			if field != "" && i > 0 {
+				countRow++
+			}
+		}
+
+	}
+
+	if countStar == countRow {
+		success = true
+	}
+
+	if success {
+		printer.AddField(" ✅ ")
+	} else {
+		printer.AddField(" ❌ ")
+	}
+	printer.AddField(name)
+	printer.AddField(strconv.Itoa(countStar))
+	printer.AddField(strconv.Itoa(countRow))
+	if err != nil {
+		printer.AddField(err.Error())
+	}
+	printer.EndRow()
+	return err
+}
+
+func runQuery(client *odps.Odps, query string) (string, error) {
+	for {
+		var err error
+		var instance *odps.Instance
+		instance, err = client.ExecSQl(query)
+		if err == nil {
+			err = instance.WaitForSuccess()
+			if err == nil {
+				var res []odps.TaskResult
+				res, err = instance.GetResult()
+				if err == nil {
+					for _, row := range res {
+						if row.Content() != "" {
+							return row.Content(), nil
+						}
+					}
+					return "", errors.New("not able to parse row")
+				}
+			}
+		}
+		if err != nil {
+			if strings.Contains(err.Error(), connErr) {
+				time.Sleep(500 * time.Millisecond)
+				err = nil
+				fmt.Println("retry")
+				continue
+			} else {
+				return "", err
+			}
+		}
+	}
+}

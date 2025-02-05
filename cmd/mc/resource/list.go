@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/aliyun/aliyun-odps-go-sdk/odps"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	mcc "github.com/sbchaos/opms/external/mc"
@@ -82,7 +81,7 @@ func (r *listCommand) RunE(_ *cobra.Command, _ []string) error {
 
 	err = printer.Render()
 	if err != nil {
-		return errors.Wrap(err, "failed to print resources")
+		return fmt.Errorf("failed to print resources: %w", err)
 	}
 	return nil
 }

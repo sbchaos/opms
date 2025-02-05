@@ -1,10 +1,10 @@
 package function
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/aliyun/aliyun-odps-go-sdk/odps"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	mcc "github.com/sbchaos/opms/external/mc"

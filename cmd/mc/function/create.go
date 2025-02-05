@@ -33,7 +33,7 @@ func NewCreateCommand(cfg *config.Config) *cobra.Command {
 	cmd.Flags().StringVarP(&list.schema, "schema", "s", "", "Schema")
 
 	cmd.Flags().StringVarP(&list.name, "name", "n", "", "Function name prefix")
-	cmd.Flags().StringVarP(&list.classPath, "classpath", "cp", "", "Resource type to query")
+	cmd.Flags().StringVarP(&list.classPath, "classpath", "c", "", "Resource type to query")
 	cmd.Flags().StringVarP(&list.resource, "res", "r", "", "Resource type to query")
 	cmd.MarkFlagRequired("name")
 	cmd.MarkFlagRequired("classpath")
@@ -59,7 +59,7 @@ func (r *createCommand) RunE(_ *cobra.Command, _ []string) error {
 
 	client.SetDefaultProjectName(proj)
 	client.SetCurrentSchemaName(schema)
-	
+
 	fun := odps.
 		NewFunctionBuilder().
 		Name(r.name).
