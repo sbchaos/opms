@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aliyun/aliyun-odps-go-sdk/odps"
@@ -14,6 +15,7 @@ import (
 	mcc "github.com/sbchaos/opms/external/mc"
 	"github.com/sbchaos/opms/lib/cmdutil"
 	"github.com/sbchaos/opms/lib/config"
+	"github.com/sbchaos/opms/lib/pool"
 	"github.com/sbchaos/opms/lib/table"
 	"github.com/sbchaos/opms/lib/term"
 )
@@ -27,6 +29,9 @@ var (
 
 type externalTableCommand struct {
 	cfg *config.Config
+
+	mu      *sync.Mutex
+	workers int
 
 	name     string
 	fileName string
@@ -45,12 +50,12 @@ func NewExternalTableCommand(cfg *config.Config) *cobra.Command {
 
 	cmd.Flags().StringVarP(&ec.name, "name", "n", "", "Table name")
 	cmd.Flags().StringVarP(&ec.fileName, "filename", "f", "", "Filename with list of tables, - for stdin")
+	cmd.Flags().IntVarP(&ec.workers, "workers", "w", 1, "Number of parallel workers")
 	return cmd
 }
 
 func (r *externalTableCommand) RunE(_ *cobra.Command, _ []string) error {
-	errMap := map[string]error{}
-
+	r.mu = &sync.Mutex{}
 	t := term.FromEnv(0, 0)
 	size, _, err := t.Size()
 	if err != nil {
@@ -85,22 +90,31 @@ func (r *externalTableCommand) RunE(_ *cobra.Command, _ []string) error {
 	printer := table.New(os.Stdout, t.IsTerminalOutput(), size)
 	printer.AddHeader([]string{"Status", "Table Name", "COUNT*", "SIZE", "Error"})
 
-	for _, t1 := range tables {
-		err = r.Validate(client, printer, t1)
-		if err != nil {
-			errMap[t1] = err
+	tasks := make([]func() pool.JobResult[string], len(tables))
+	for i, t1 := range tables {
+		t1 := t1
+		tasks[i] = func() pool.JobResult[string] {
+			err = r.Validate(client, printer, t1)
+			return pool.JobResult[string]{
+				Output: t1,
+				Err:    err,
+			}
 		}
 	}
+
+	outchan := pool.RunWithWorkers(r.workers, tasks)
 
 	err = printer.Render()
 	if err != nil {
 		return fmt.Errorf("failed to print table: %w", err)
 	}
 
-	if len(errMap) > 0 {
-		fmt.Fprintln(os.Stderr, "Error(s) encountered:")
-		for n, err := range errMap {
-			fmt.Fprintf(os.Stderr, "Name: %s, Err: %s\n", n, err)
+	fmt.Println()
+	fmt.Println()
+	fmt.Fprintln(os.Stderr, "Error(s) encountered:")
+	for out := range outchan {
+		if out.Err != nil {
+			fmt.Fprintf(os.Stderr, "Name: %s, Err: %s\n", out.Output, out.Err)
 		}
 	}
 
@@ -140,6 +154,8 @@ func (r *externalTableCommand) Validate(client *odps.Odps, printer table.Printer
 		success = true
 	}
 
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if success {
 		printer.AddField(" ✅ ")
 	} else {
@@ -179,7 +195,6 @@ func runQuery(client *odps.Odps, query string) (string, error) {
 			if strings.Contains(err.Error(), connErr) {
 				time.Sleep(500 * time.Millisecond)
 				err = nil
-				fmt.Println("retry")
 				continue
 			} else {
 				return "", err
