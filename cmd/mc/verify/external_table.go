@@ -21,7 +21,8 @@ import (
 )
 
 var (
-	connErr = "connection reset by peer"
+	connErr     = "connection reset by peer"
+	deadlineErr = "context deadline exceeded"
 
 	countSQL    = `SELECT count(*) FROM `
 	queryFields = `SELECT * FROM `
@@ -165,22 +166,21 @@ func (r *externalTableCommand) Validate(client *odps.Odps, printer table.Printer
 	printer.AddField(strconv.Itoa(countStar))
 	printer.AddField(strconv.Itoa(countRow))
 	if err != nil {
-		printer.AddField(err.Error())
+		errFirstPart := err.Error()[0:20]
+		printer.AddField(errFirstPart)
 	}
 	printer.EndRow()
 	return err
 }
 
 func runQuery(client *odps.Odps, query string) (string, error) {
-	for {
-		var err error
-		var instance *odps.Instance
-		instance, err = client.ExecSQl(query)
+	i := 5
+	for i > 1 {
+		instance, err := client.ExecSQl(query)
 		if err == nil {
 			err = instance.WaitForSuccess()
 			if err == nil {
-				var res []odps.TaskResult
-				res, err = instance.GetResult()
+				res, err := instance.GetResult()
 				if err == nil {
 					for _, row := range res {
 						if row.Content() != "" {
@@ -192,13 +192,15 @@ func runQuery(client *odps.Odps, query string) (string, error) {
 			}
 		}
 		if err != nil {
-			if strings.Contains(err.Error(), connErr) {
-				time.Sleep(500 * time.Millisecond)
+			if strings.Contains(err.Error(), connErr) || strings.Contains(err.Error(), deadlineErr) {
+				time.Sleep(200 * time.Millisecond)
 				err = nil
+				i--
 				continue
 			} else {
 				return "", err
 			}
 		}
 	}
+	return "", errors.New("timeout")
 }
