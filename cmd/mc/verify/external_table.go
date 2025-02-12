@@ -123,7 +123,6 @@ func (r *externalTableCommand) RunE(_ *cobra.Command, _ []string) error {
 }
 
 func (r *externalTableCommand) Validate(client *odps.Odps, printer table.Printer, name string) error {
-	success := false
 	countStar := -1
 	countRow := 0
 
@@ -151,14 +150,12 @@ func (r *externalTableCommand) Validate(client *odps.Odps, printer table.Printer
 
 	}
 
-	if countStar == countRow {
-		success = true
-	}
-
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if success {
+	if countStar == countRow {
 		printer.AddField(" ✅ ")
+	} else if countRow == 10000 {
+		printer.AddField(" ❗️ ")
 	} else {
 		printer.AddField(" ❌ ")
 	}

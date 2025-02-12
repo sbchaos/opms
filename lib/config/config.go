@@ -37,7 +37,7 @@ const (
 var (
 	cfg     *Config
 	once    sync.Once
-	loadErr error = errors.New("unable to load config")
+	loadErr = errors.New("unable to load config")
 )
 
 type Config struct {
@@ -80,7 +80,7 @@ func ReadFromString(str string) *Config {
 }
 
 func DefaultConfig() *Config {
-	return ReadFromString(defaultConfig)
+	return ReadFromString(defaultConfigStr)
 }
 
 func Write(c *Config) error {
