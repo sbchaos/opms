@@ -69,10 +69,7 @@ func (r *listCommand) RunE(_ *cobra.Command, _ []string) error {
 	}
 
 	t := term.FromEnv(0, 0)
-	size, _, err := t.Size()
-	if err != nil {
-		size = 120
-	}
+	size, _ := t.Size(120)
 
 	printer := table.New(os.Stdout, t.IsTerminalOutput(), size)
 	fn := setupPrinter(printer)

@@ -82,22 +82,26 @@ func (t Term) IsTrueColorSupported() bool {
 
 // Size returns the width and height of the terminal that the current process is attached to.
 // In case of errors, the numeric values returned are -1.
-func (t Term) Size() (int, int, error) {
+func (t Term) Size(def int) (int, int) {
 	if t.width > 0 {
-		return t.width, -1, nil
+		return t.width, -1
 	}
 
 	ttyOut := t.out
 	if ttyOut == nil || !IsTerminal(ttyOut) {
-		return -1, -1, nil
+		return def, -1
 	}
 
 	width, height, err := terminalSize(ttyOut)
-	if err == nil && t.widthPercent > 0 {
-		return int(float64(width) * float64(t.widthPercent) / 100), height, nil
+	if err != nil {
+		return def, -1
 	}
 
-	return width, height, err
+	if t.widthPercent > 0 {
+		return int(float64(width) * float64(t.widthPercent) / 100), height
+	}
+
+	return width, height
 }
 
 // IsTerminal reports whether a file descriptor is connected to a terminal.

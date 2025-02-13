@@ -49,10 +49,7 @@ func NewExistsCommand(cfg *config.Config) *cobra.Command {
 
 func (r *existsCommand) RunE(_ *cobra.Command, _ []string) error {
 	t := term.FromEnv(0, 0)
-	size, _, err := t.Size()
-	if err != nil {
-		size = 120
-	}
+	size, _ := t.Size(120)
 
 	client, err := mcc.NewClientFromConfig(r.cfg)
 	if err != nil {
