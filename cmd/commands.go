@@ -4,6 +4,7 @@ import (
 	cli "github.com/spf13/cobra"
 
 	"github.com/sbchaos/opms/cmd/mc"
+	"github.com/sbchaos/opms/cmd/optimus"
 	"github.com/sbchaos/opms/cmd/profiles"
 	"github.com/sbchaos/opms/lib/config"
 )
@@ -29,7 +30,7 @@ func New(cfg *config.Config) *cli.Command {
 	cmd.AddCommand(
 		mc.NewMaxcomputeCommand(cfg),
 		profiles.NewProfilesCommand(cfg),
-
+		optimus.NewOptimusCommand(cfg),
 	)
 
 	return cmd

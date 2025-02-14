@@ -1,0 +1,41 @@
+{{- /* gotype: github.com/sbchaos/opms/cmd/optimus/generate/external_table.YamlContext */ -}}
+version: 2
+name: {{.FullName }}
+type: external_table
+{{- if .Labels }}
+labels:
+  {{- range $key, $value := $.Labels }}
+  {{ $key }}: {{ $value }}
+  {{- end }}
+{{- end }}
+spec:
+  {{- if .Et.Description }}
+  description: {{.Et.Description}}
+  {{- end }}
+  project: {{.Proj}}
+  database: {{.Schema}}
+  name: {{.Name}}
+  schema:
+   {{- range $i, $value := $.Et.Schema }}
+   - name: {{ $value.Name }}
+     type: {{ $value.Type }}
+     {{- if $value.Description }}
+     description: {{ $value.Description }}
+     {{- end }}
+     {{- if $value.Decimal }}
+     decimal:
+       precision: 38
+       scale: 9
+     {{- end }}
+   {{- end }}
+  source:
+    type: GOOGLE_SHEETS
+    uris:
+    {{- range $i, $value := $.Et.Source.SourceURIs }}
+      - {{$value}}
+    {{- end }}
+    range: "{{.Et.Source.Range}}"
+    serde_properties:
+    {{- range $key, $value := $.Et.Source.SerdeProperties }}
+      {{ $key }}: "{{ $value }}"
+    {{- end }}
