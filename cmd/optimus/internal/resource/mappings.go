@@ -15,7 +15,7 @@ type MappedExtTable struct {
 	OldName  string
 }
 
-func MapExternalTable(name string, spec *ExternalTable, projectMapping, typeMapping map[string]string) (*MappedExtTable, error) {
+func MapExternalTable(spec *ExternalTable, projectMapping, typeMapping map[string]string) (*MappedExtTable, error) {
 	schema, err := MapSchema(spec.Schema, typeMapping)
 	if err != nil {
 		return nil, err
@@ -27,9 +27,9 @@ func MapExternalTable(name string, spec *ExternalTable, projectMapping, typeMapp
 		Source:      MapExternalSourceConfig(spec.Source),
 	}
 
-	split := strings.Split(name, ".")
+	split := strings.Split(spec.Name, ".")
 	proj := split[0]
-	p1, ok := projectMapping[name]
+	p1, ok := projectMapping[proj]
 	if ok {
 		proj = p1
 	}

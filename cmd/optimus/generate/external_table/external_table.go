@@ -56,6 +56,7 @@ func NewExternalTableCommand(cfg *config.Config) *cobra.Command {
 		Use:     "external-table",
 		Short:   "Generate external table spec from bq query/queries",
 		Example: "opms optimus generate external-table --query /path/to/file.sql",
+		PreRunE: ec.PreRunE,
 		RunE:    ec.RunE,
 	}
 
@@ -210,11 +211,12 @@ func (r *etCommand) processQuery(name, query string, printer table.Printer) erro
 		}
 		return err
 	}
+	tableName := bqET.FullName()
 
-	y1, err := resource.MapExternalTable(name, bqET, r.projMap, r.typeMap)
+	y1, err := resource.MapExternalTable(bqET, r.projMap, r.typeMap)
 	if err != nil {
 		printer.AddField(Failed)
-		printer.AddField(name)
+		printer.AddField(tableName)
 		printer.AddField("error converting to maxcompute type")
 		return err
 	}
@@ -233,12 +235,12 @@ func (r *etCommand) processQuery(name, query string, printer table.Printer) erro
 	err = r.WriteResource(yctx)
 	if err != nil {
 		printer.AddField(Failed)
-		printer.AddField(name)
+		printer.AddField(tableName)
 		printer.AddField("error writing file")
 		return err
 	}
 	printer.AddField(Success)
-	printer.AddField(name)
+	printer.AddField(tableName)
 	printer.AddField("")
 	return nil
 }
