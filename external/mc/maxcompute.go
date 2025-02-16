@@ -25,7 +25,7 @@ type maxComputeCredentials struct {
 
 func NewClientFromConfig(cfg *config.Config) (*odps.Odps, error) {
 	mcCreds := os.Getenv(MaxcomputeAccount)
-	if a := os.Getenv(mcCreds); a != "" {
+	if mcCreds != "" {
 		return NewClient(mcCreds)
 	}
 

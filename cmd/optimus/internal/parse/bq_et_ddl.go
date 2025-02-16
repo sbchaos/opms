@@ -8,6 +8,7 @@ import (
 	b "github.com/sbchaos/consume/par"
 	"github.com/sbchaos/consume/par/char"
 	sp "github.com/sbchaos/consume/par/strings"
+	"github.com/sbchaos/consume/stream"
 
 	"github.com/sbchaos/opms/cmd/optimus/internal/resource"
 )
@@ -61,26 +62,44 @@ func OptValue(l b.Logger) b.Parser[rune, string] {
 }
 
 func ddlParser(l b.Logger, fn func(string) error) b.Parser[rune, resource.ExternalTable] {
-	nameAndSchema := h.And(
-		nameParser(l, fn),
-		h.Optional(schemaParser(l), resource.Schema{}),
-		func(a string, sch resource.Schema) resource.ExternalTable {
+	return func(ss stream.SimpleStream[rune]) (resource.ExternalTable, error) {
+		name, err := b.Parse(ss, nameParser(l))
+		if err != nil {
+			return resource.ExternalTable{}, err
+		}
+
+		err = fn(name)
+		if err != nil {
 			return resource.ExternalTable{
-				Name:   a,
-				Schema: sch,
-			}
-		})
-	return h.And(nameAndSchema, sourceParser(l), func(a resource.ExternalTable, b resource.ExternalSource) resource.ExternalTable {
-		a.Source = &b
-		return a
-	})
+				Name: name,
+			}, err
+		}
+
+		schema, err := b.Parse(ss, schemaParser(l))
+		if err != nil {
+			schema = resource.Schema{}
+		}
+
+		et := resource.ExternalTable{
+			Name:   name,
+			Schema: schema,
+		}
+
+		source, err := b.Parse(ss, sourceParser(l))
+		if err != nil {
+			return et, err
+		}
+
+		et.Source = &source
+		return et, nil
+	}
 }
 
-func nameParser(l b.Logger, fn func(string) error) b.Parser[rune, string] {
+func nameParser(l b.Logger) b.Parser[rune, string] {
 	header := b.Trace(l, "header", sp.Sequence([]string{"CREATE", "EXTERNAL", "TABLE"}, sp.EqualIgnoreCase))
 	return h.Skip(
 		header,
-		h.Pause(fn, b.Trace(l, "string", StringWithOptionalQuotes(l))))
+		b.Trace(l, "string", StringWithOptionalQuotes(l)))
 }
 
 func fieldParser(l b.Logger) b.Parser[rune, *resource.Field] {
