@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/aliyun/aliyun-odps-go-sdk v0.4.2
-	github.com/sbchaos/consume v0.0.0-20250117151742-4555390c1ac7
+	github.com/sbchaos/consume v0.0.0-20250216051529-b6effe50e157
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.10.0

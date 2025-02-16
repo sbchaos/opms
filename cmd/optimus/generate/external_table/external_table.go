@@ -25,6 +25,8 @@ import (
 var (
 	Success = " ✅ "
 	Failed  = " ❌ "
+
+	ErrNotReq = errors.New("not required")
 )
 
 //go:embed resource.yaml.tmpl
@@ -118,7 +120,14 @@ func (r *etCommand) PreRunE(_ *cobra.Command, _ []string) error {
 		fmt.Println("Processing all queries")
 	}
 
-	r.parser, err = parse.NewDDLParser(&fmtLog{}, r.requiredList)
+	reqFn := func(name string) error {
+		if r.requiredList[name] != "" {
+			return nil
+		}
+		return ErrNotReq
+	}
+
+	r.parser, err = parse.NewDDLParser(nil, reqFn)
 	if err != nil {
 		return err
 	}
@@ -163,10 +172,7 @@ func (r *etCommand) RunE(_ *cobra.Command, _ []string) error {
 func (r *etCommand) processDirectory(printer table.Printer) []error {
 	entries, err := os.ReadDir(r.dirName)
 	if err != nil {
-		printer.AddField(Failed)
-		printer.AddField(r.dirName)
-		printer.AddField("")
-		printer.AddField("error reading dir")
+		addFailureRow(printer, r.dirName, "error reading dir")
 		return nil
 	}
 
@@ -179,10 +185,7 @@ func (r *etCommand) processDirectory(printer table.Printer) []error {
 		filePath := path.Join(r.dirName, entry.Name())
 		content, err := os.ReadFile(filePath)
 		if err != nil {
-			printer.AddField(Failed)
-			printer.AddField(filePath)
-			printer.AddField("")
-			printer.AddField("error opening file")
+			addFailureRow(printer, filePath, "error opening file")
 			continue
 		}
 
@@ -197,27 +200,25 @@ func (r *etCommand) processDirectory(printer table.Printer) []error {
 func (r *etCommand) processQuery(name, query string, printer table.Printer) error {
 	bqET, err := r.parser.ParseExternalTable(query)
 	if err != nil {
-		printer.AddField(Failed)
+		toName := name
+		msg := "error parsing query"
+
 		if bqET != nil && bqET.FullName() != "" {
-			printer.AddField(bqET.FullName())
-		} else {
-			printer.AddField(name)
+			toName = bqET.FullName()
 		}
 
-		if err == parse.ErrNotReq {
-			printer.AddField("not required")
-		} else {
-			printer.AddField("error parsing query")
+		if err == ErrNotReq {
+			msg = "not required"
 		}
+
+		addFailureRow(printer, toName, msg)
 		return err
 	}
 	tableName := bqET.FullName()
 
 	y1, err := resource.MapExternalTable(bqET, r.projMap, r.typeMap)
 	if err != nil {
-		printer.AddField(Failed)
-		printer.AddField(tableName)
-		printer.AddField("error converting to maxcompute type")
+		addFailureRow(printer, tableName, "error converting to maxcompute type")
 		return err
 	}
 
@@ -234,15 +235,21 @@ func (r *etCommand) processQuery(name, query string, printer table.Printer) erro
 
 	err = r.WriteResource(yctx)
 	if err != nil {
-		printer.AddField(Failed)
-		printer.AddField(tableName)
-		printer.AddField("error writing file")
+		addFailureRow(printer, tableName, "error writing file")
 		return err
 	}
 	printer.AddField(Success)
 	printer.AddField(tableName)
 	printer.AddField("")
+	printer.EndRow()
 	return nil
+}
+
+func addFailureRow(printer table.Printer, name string, msg string) {
+	printer.AddField(Failed)
+	printer.AddField(name)
+	printer.AddField(msg)
+	printer.EndRow()
 }
 
 func (r *etCommand) WriteResource(ymCtx *YamlContext) error {
@@ -298,10 +305,4 @@ type YamlContext struct {
 	FullName string
 	OldName  string
 	Labels   map[string]string
-}
-
-type fmtLog struct{}
-
-func (f fmtLog) Log(args ...interface{}) {
-	fmt.Println(args...)
 }

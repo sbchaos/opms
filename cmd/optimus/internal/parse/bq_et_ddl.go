@@ -1,7 +1,6 @@
 package parse
 
 import (
-	"errors"
 	"strconv"
 	"unicode"
 
@@ -13,17 +12,17 @@ import (
 	"github.com/sbchaos/opms/cmd/optimus/internal/resource"
 )
 
-var (
-	ErrNotReq = errors.New("not required")
-)
-
 type DDLParser struct {
 	l  b.Logger
 	p1 b.Parser[rune, resource.ExternalTable]
 }
 
-func NewDDLParser(l b.Logger, required map[string]string) (*DDLParser, error) {
-	p1 := ddlParser(l, required)
+func NewDDLParser(l b.Logger, fn func(name string) error) (*DDLParser, error) {
+	if l == nil {
+		l = &b.FmtLog{}
+	}
+
+	p1 := ddlParser(l, fn)
 	return &DDLParser{
 		l:  l,
 		p1: p1,
@@ -61,9 +60,9 @@ func OptValue(l b.Logger) b.Parser[rune, string] {
 	)
 }
 
-func ddlParser(l b.Logger, required map[string]string) b.Parser[rune, resource.ExternalTable] {
+func ddlParser(l b.Logger, fn func(string) error) b.Parser[rune, resource.ExternalTable] {
 	nameAndSchema := h.And(
-		nameParser(l, required),
+		nameParser(l, fn),
 		h.Optional(schemaParser(l), resource.Schema{}),
 		func(a string, sch resource.Schema) resource.ExternalTable {
 			return resource.ExternalTable{
@@ -77,18 +76,11 @@ func ddlParser(l b.Logger, required map[string]string) b.Parser[rune, resource.E
 	})
 }
 
-func nameParser(l b.Logger, required map[string]string) b.Parser[rune, string] {
+func nameParser(l b.Logger, fn func(string) error) b.Parser[rune, string] {
 	header := b.Trace(l, "header", sp.Sequence([]string{"CREATE", "EXTERNAL", "TABLE"}, sp.EqualIgnoreCase))
 	return h.Skip(
 		header,
-		h.FMap1(func(a string) (string, error) {
-			if len(required) != 0 {
-				if _, ok := required[a]; !ok {
-					return "", ErrNotReq
-				}
-			}
-			return a, nil
-		}, b.Trace(l, "string", StringWithOptionalQuotes(l))))
+		h.Pause(fn, b.Trace(l, "string", StringWithOptionalQuotes(l))))
 }
 
 func fieldParser(l b.Logger) b.Parser[rune, *resource.Field] {

@@ -160,6 +160,10 @@ github.com/ruudk/golang-pdf417 v0.0.0-20181029194003-1af4ab5afa58/go.mod h1:6lfF
 github.com/ruudk/golang-pdf417 v0.0.0-20201230142125-a7e3863a1245/go.mod h1:pQAZKsJ8yyVxGRWYNEm9oFB8ieLgKFnamEyDmSA0BRk=
 github.com/sbchaos/consume v0.0.0-20250117151742-4555390c1ac7 h1:aFlajYnATFj6dJ+6EQMas2avc2BbQjRlUY1JFGOWnUY=
 github.com/sbchaos/consume v0.0.0-20250117151742-4555390c1ac7/go.mod h1:VV3cimlnV3h2yWlbPlhL3Of6UjfoFIASmIghQ4mIciI=
+github.com/sbchaos/consume v0.0.0-20250216050843-ad1225779ff8 h1:6pnJOpgxwbqOVh+opGGV2RiZqGlEwAiGhn3+E2MlNk8=
+github.com/sbchaos/consume v0.0.0-20250216050843-ad1225779ff8/go.mod h1:VV3cimlnV3h2yWlbPlhL3Of6UjfoFIASmIghQ4mIciI=
+github.com/sbchaos/consume v0.0.0-20250216051529-b6effe50e157 h1:IbwaP9VFEbeo5oZuhkvtMZVJWS/7Gpb4krawAswv6k0=
+github.com/sbchaos/consume v0.0.0-20250216051529-b6effe50e157/go.mod h1:VV3cimlnV3h2yWlbPlhL3Of6UjfoFIASmIghQ4mIciI=
 github.com/spf13/cobra v1.8.1 h1:e5/vxKd/rZsfSJMUX1agtjeTDf+qv1/JdBF8gg5k9ZM=
 github.com/spf13/cobra v1.8.1/go.mod h1:wHxEcudfqmLYa8iTfL+OuZPbBZkmvliBWKIezN3kD9Y=
 github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=
