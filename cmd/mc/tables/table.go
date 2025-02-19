@@ -18,6 +18,7 @@ func NewTableCommand(cfg *config.Config) *cobra.Command {
 		NewExistsCommand(cfg),
 		NewDropCommand(cfg),
 		NewDescCommand(cfg),
+		NewReadTableCommand(cfg),
 	)
 
 	return cmd
