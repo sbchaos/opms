@@ -34,7 +34,7 @@ func NewCountCommand(cfg *config.Config) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "count",
-		Short:   "Count the tables",
+		Short:   "Count the rows in table",
 		Example: "opms bq tables count",
 		RunE:    count.RunE,
 	}
@@ -80,16 +80,20 @@ func (r *countCommand) RunE(_ *cobra.Command, _ []string) error {
 	printer := table.New(os.Stdout, t.IsTerminalOutput(), size)
 	printer.AddHeader([]string{"Table", "Count", "Error"})
 
+	errs := make([]error, 0)
 	for _, t1 := range tableNames {
 		err = queryTable(ctx, client, t1, printer)
 		if err != nil {
-			fmt.Println(err)
+			errs = append(errs, err)
 		}
 	}
 
 	err = printer.Render()
-	if err != nil {
-		return fmt.Errorf("failed to print table: %w", err)
+	if len(errs) != 0 {
+		fmt.Println("Errors:")
+		for _, err := range errs {
+			fmt.Println("  " + err.Error())
+		}
 	}
 	return nil
 }
