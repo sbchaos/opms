@@ -32,7 +32,6 @@ func NewCreateProfileCommand(cfg *config.Config) *cobra.Command {
 }
 
 func (c createCommand) RunE(_ *cobra.Command, _ []string) error {
-	//t := term.FromEnv(0, 0)
 	reader := bufio.NewReader(os.Stdin)
 	profile := config.Profiles{}
 

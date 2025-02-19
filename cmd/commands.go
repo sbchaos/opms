@@ -3,6 +3,7 @@ package cmd
 import (
 	cli "github.com/spf13/cobra"
 
+	"github.com/sbchaos/opms/cmd/bq"
 	"github.com/sbchaos/opms/cmd/mc"
 	"github.com/sbchaos/opms/cmd/optimus"
 	"github.com/sbchaos/opms/cmd/profiles"
@@ -31,6 +32,7 @@ func New(cfg *config.Config) *cli.Command {
 		mc.NewMaxcomputeCommand(cfg),
 		profiles.NewProfilesCommand(cfg),
 		optimus.NewOptimusCommand(cfg),
+		bq.NewBigQueryCommand(cfg),
 	)
 
 	return cmd

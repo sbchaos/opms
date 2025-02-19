@@ -18,6 +18,7 @@ func NewProfilesCommand(cfg *config.Config) *cobra.Command {
 		NewShowProfileCommand(cfg),
 		NewUseProfileCommand(cfg),
 		NewDeleteProfileCommand(cfg),
+		NewEditProfileCommand(cfg),
 	)
 	return cmd
 }

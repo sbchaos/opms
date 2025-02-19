@@ -37,14 +37,15 @@ func NewShowProfileCommand(cfg *config.Config) *cobra.Command {
 }
 
 func (s show) RunE(_ *cobra.Command, _ []string) error {
-	fmt.Printf("\nKeyring %v\n", showKeyring)
-	fmt.Println("")
-
 	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Printf("Available Profiles:\n")
 	for i, p := range s.cfg.AvailableProfiles {
-		fmt.Printf("%d. %s\n", i+1, p.Name)
+		msg := ""
+		if p.Name == s.cfg.CurrentProfile {
+			msg = "*"
+		}
+		fmt.Printf("%d. %s %s\n", i+1, p.Name, msg)
 	}
 
 	fmt.Printf("Please choose a profile: ")
