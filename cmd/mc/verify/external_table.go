@@ -152,7 +152,7 @@ func (r *externalTableCommand) Validate(client *odps.Odps, printer table.Printer
 	if countStar == countRow {
 		printer.AddField(" ✅ ")
 	} else if countRow == 10000 {
-		printer.AddField(" ❗️ ")
+		printer.AddField(" ❗ ")
 	} else {
 		printer.AddField(" ❌ ")
 	}

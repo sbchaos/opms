@@ -17,10 +17,13 @@ const (
 )
 
 type maxComputeCredentials struct {
-	AccessID    string `json:"access_id"`
-	AccessKey   string `json:"access_key"`
-	Endpoint    string `json:"mc_endpoint"`
-	ProjectName string `json:"project_name"`
+	AccessID      string `json:"access_id"`
+	AccessKey     string `json:"access_key"`
+	McEndpoint    string `json:"mc_endpoint"`
+	ProjectName   string `json:"project_name"`
+	OSSEndpoint   string `json:"oss_endpoint"`
+	Region        string `json:"region"`
+	SecurityToken string `json:"security_token"`
 }
 
 func NewClientFromConfig(cfg *config.Config) (*odps.Odps, error) {
@@ -50,7 +53,7 @@ func NewClient(creds string) (*odps.Odps, error) {
 	}
 
 	aliAccount := account.NewAliyunAccount(c1.AccessID, c1.AccessKey)
-	odpsIns := odps.NewOdps(aliAccount, c1.Endpoint)
+	odpsIns := odps.NewOdps(aliAccount, c1.McEndpoint)
 	odpsIns.SetDefaultProjectName(c1.ProjectName)
 
 	return odpsIns, nil

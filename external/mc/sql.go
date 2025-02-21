@@ -43,7 +43,7 @@ func NewSQLClient(creds string) (*sql.DB, error) {
 		AccessId:             c1.AccessID,
 		AccessKey:            c1.AccessKey,
 		StsToken:             "",
-		Endpoint:             c1.Endpoint,
+		Endpoint:             c1.McEndpoint,
 		ProjectName:          c1.ProjectName,
 		HttpTimeout:          0,
 		TcpConnectionTimeout: 30 * time.Second,

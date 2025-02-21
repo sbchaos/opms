@@ -1,9 +1,10 @@
 module github.com/sbchaos/opms
 
-go 1.23
+go 1.24
 
 require (
 	cloud.google.com/go/bigquery v1.66.2
+	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.1.3
 	github.com/aliyun/aliyun-odps-go-sdk v0.4.2
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/sbchaos/consume v0.0.0-20250216124942-828e44190eca
