@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/api/iterator"
 
-	"github.com/sbchaos/opms/external/bq"
+	"github.com/sbchaos/opms/external/gcp"
 	"github.com/sbchaos/opms/lib/config"
 	"github.com/sbchaos/opms/lib/table"
 	"github.com/sbchaos/opms/lib/term"
@@ -41,7 +41,7 @@ func NewReadCommand(cfg *config.Config) *cobra.Command {
 }
 
 func (r *readCommand) RunE(_ *cobra.Command, _ []string) error {
-	client, err := bq.NewClientFromConfig(r.cfg)
+	client, err := gcp.NewClientFromConfig(r.cfg)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (r *readCommand) RunE(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func readTable(ctx context.Context, client *bq.Client, tableName string, printer table.Printer) error {
+func readTable(ctx context.Context, client *gcp.Client, tableName string, printer table.Printer) error {
 	qr := `SELECT * FROM ` + tableName
 	q := client.Query(qr)
 

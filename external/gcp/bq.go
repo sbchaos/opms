@@ -1,4 +1,4 @@
-package bq
+package gcp
 
 import (
 	"context"

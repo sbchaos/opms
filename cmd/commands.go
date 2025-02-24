@@ -6,6 +6,7 @@ import (
 	"github.com/sbchaos/opms/cmd/bq"
 	"github.com/sbchaos/opms/cmd/mc"
 	"github.com/sbchaos/opms/cmd/optimus"
+	"github.com/sbchaos/opms/cmd/oss"
 	"github.com/sbchaos/opms/cmd/profiles"
 	"github.com/sbchaos/opms/lib/config"
 )
@@ -33,6 +34,7 @@ func New(cfg *config.Config) *cli.Command {
 		profiles.NewProfilesCommand(cfg),
 		optimus.NewOptimusCommand(cfg),
 		bq.NewBigQueryCommand(cfg),
+		oss.NewOSSCommand(cfg),
 	)
 
 	return cmd
