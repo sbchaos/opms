@@ -15,7 +15,7 @@ func MinimumArgs(n int, msg string) cobra.PositionalArgs {
 
 	return func(cmd *cobra.Command, args []string) error {
 		if len(args) < n {
-			return errors.New(fmt.Sprintf("%s", msg))
+			return fmt.Errorf("%s", msg)
 		}
 		return nil
 	}
@@ -28,7 +28,7 @@ func ExactArgs(n int, msg string) cobra.PositionalArgs {
 		}
 
 		if len(args) < n {
-			return errors.New(fmt.Sprintf("%s", msg))
+			return fmt.Errorf("%s", msg)
 		}
 
 		return nil
@@ -56,5 +56,5 @@ func NoArgsQuoteReminder(cmd *cobra.Command, args []string) error {
 		errMsg += "; please quote all values that have spaces"
 	}
 
-	return errors.New(fmt.Sprintf("%s", errMsg))
+	return errors.New(errMsg)
 }

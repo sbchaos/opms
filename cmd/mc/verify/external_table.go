@@ -80,9 +80,7 @@ func (r *externalTableCommand) RunE(_ *cobra.Command, _ []string) error {
 		}
 
 		fields := strings.Fields(string(content))
-		for _, field := range fields {
-			tables = append(tables, field)
-		}
+		tables = append(tables, fields...)
 	}
 
 	printer := table.New(os.Stdout, t.IsTerminalOutput(), size)

@@ -67,9 +67,7 @@ func (r *countCommand) RunE(_ *cobra.Command, _ []string) error {
 		}
 
 		fields := strings.Fields(string(content))
-		for _, field := range fields {
-			tableNames = append(tableNames, field)
-		}
+		tableNames = append(tableNames, fields...)
 	}
 	t := term.FromEnv(0, 0)
 	size, _ := t.Size(120)
