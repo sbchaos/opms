@@ -3,7 +3,10 @@ package oss
 import (
 	"context"
 	"encoding/csv"
+	"errors"
+	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
@@ -22,6 +25,8 @@ type readCommand struct {
 
 	name   string
 	bucket string
+
+	tableName string
 }
 
 func NewReadCommand(cfg *config.Config) *cobra.Command {
@@ -35,8 +40,8 @@ func NewReadCommand(cfg *config.Config) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&read.name, "name", "n", "", "File name")
-	cmd.Flags().StringVarP(&read.name, "bucket", "b", "", "Bucket name")
-	cmd.MarkFlagRequired("name")
+	cmd.Flags().StringVarP(&read.tableName, "table", "t", "", "Table name")
+	cmd.Flags().StringVarP(&read.bucket, "bucket", "b", "", "Bucket name")
 	cmd.MarkFlagRequired("bucket")
 	return cmd
 }
@@ -55,7 +60,25 @@ func (r *readCommand) RunE(_ *cobra.Command, _ []string) error {
 
 	printer := table.New(os.Stdout, t.IsTerminalOutput(), size)
 
-	err = readFileFromBucket(ctx, client, r.bucket, r.name, printer)
+	if r.name == "" && r.tableName == "" {
+		return errors.New("either name or table name is required")
+	}
+
+	name := ""
+	if r.name != "" {
+		name = r.name
+	}
+
+	if r.tableName != "" {
+		if name != "" {
+			fmt.Println("ignoring the table name, name provided as well")
+		} else {
+			parts := strings.Split(r.tableName, ".")
+			name = fmt.Sprintf("external-table/%s/%s/%s/file.csv", parts[0], parts[1], parts[2])
+		}
+	}
+
+	err = readFileFromBucket(ctx, client, r.bucket, name, printer)
 	if err != nil {
 		return err
 	}
@@ -65,17 +88,17 @@ func (r *readCommand) RunE(_ *cobra.Command, _ []string) error {
 }
 
 func readFileFromBucket(ctx context.Context, client *oss.Client, bucketName, objectKey string, printer table.Printer) error {
-	getObject, err := client.GetObject(ctx, &oss.GetObjectRequest{
-		Bucket: &bucketName,
-		Key:    &objectKey,
+	result, err := client.GetObject(ctx, &oss.GetObjectRequest{
+		Bucket: oss.Ptr(bucketName),
+		Key:    oss.Ptr(objectKey),
 	})
 	if err != nil {
 		return err
 	}
 
-	defer getObject.Body.Close()
+	defer result.Body.Close()
 
-	content, err := csv.NewReader(getObject.Body).ReadAll()
+	content, err := csv.NewReader(result.Body).ReadAll()
 	if err != nil {
 		return err
 	}
