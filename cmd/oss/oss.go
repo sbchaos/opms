@@ -14,7 +14,7 @@ func NewOSSCommand(cfg *config.Config) *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		NewReadCommand(cfg),
+		NewReadCSVCommand(cfg),
 	)
 	return cmd
 }

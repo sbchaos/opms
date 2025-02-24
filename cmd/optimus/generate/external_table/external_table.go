@@ -268,7 +268,7 @@ func GetContent(tmpl *template.Template, ctx *YamlContext) (string, error) {
 		return "", errors.New(msg)
 	}
 
-	return string(buf.Bytes()), nil
+	return buf.String(), nil
 }
 
 func WriteFile(filePath string, content string) error {

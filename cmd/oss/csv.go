@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,13 +30,13 @@ type readCommand struct {
 	tableName string
 }
 
-func NewReadCommand(cfg *config.Config) *cobra.Command {
+func NewReadCSVCommand(cfg *config.Config) *cobra.Command {
 	read := &readCommand{cfg: cfg}
 
 	cmd := &cobra.Command{
-		Use:     "read",
+		Use:     "csv",
 		Short:   "Read content from OSS",
-		Example: "opms oss read",
+		Example: "opms oss csv",
 		RunE:    read.RunE,
 	}
 
@@ -103,9 +104,10 @@ func readFileFromBucket(ctx context.Context, client *oss.Client, bucketName, obj
 		return err
 	}
 
-	printer.AddHeader(content[0])
+	printer.AddHeader(append([]string{"row num"}, content[0]...))
 
-	for _, row := range content[1:] {
+	for i, row := range content[1:] {
+		printer.AddField(strconv.Itoa(i))
 		for _, col := range row {
 			printer.AddField(col)
 		}
