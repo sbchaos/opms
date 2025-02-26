@@ -1,15 +1,13 @@
 package verify
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
-	"time"
 
-	"github.com/aliyun/aliyun-odps-go-sdk/odps"
 	"github.com/spf13/cobra"
 
 	mcc "github.com/sbchaos/opms/external/mc"
@@ -21,8 +19,7 @@ import (
 )
 
 var (
-	connErr     = "connection reset by peer"
-	deadlineErr = "context deadline exceeded"
+	maxRecordLimit = int64(600000)
 
 	countSQL    = `SELECT count(*) FROM `
 	queryFields = `SELECT * FROM `
@@ -60,7 +57,7 @@ func (r *externalTableCommand) RunE(_ *cobra.Command, _ []string) error {
 	t := term.FromEnv(0, 0)
 	size, _ := t.Size(120)
 
-	client, err := mcc.NewClientFromConfig(r.cfg)
+	client, err := mcc.NewSQLClientFromConfig(r.cfg)
 	if err != nil {
 		return err
 	}
@@ -74,12 +71,11 @@ func (r *externalTableCommand) RunE(_ *cobra.Command, _ []string) error {
 	}
 
 	if r.fileName != "" {
-		content, err := cmdutil.ReadFile(r.fileName, os.Stdin)
+		fields, err := cmdutil.ReadLines(r.fileName, os.Stdin)
 		if err != nil {
 			return err
 		}
 
-		fields := strings.Fields(string(content))
 		tables = append(tables, fields...)
 	}
 
@@ -117,46 +113,34 @@ func (r *externalTableCommand) RunE(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func (r *externalTableCommand) Validate(client *odps.Odps, printer table.Printer, name string) error {
-	countStar := -1
-	countRow := 0
+func (r *externalTableCommand) Validate(client *sql.DB, printer table.Printer, name string) error {
+	countStar := int64(-1)
+	countRow := int64(0)
 
-	countStarQry := countSQL + name + ";"
-	res, err := runQuery(client, countStarQry)
+	res, err := runCountStar(client, name)
 	if err == nil {
-		parts := strings.Split(res, "\n")
-		if len(parts) > 1 {
-			val, err2 := strconv.Atoi(parts[1])
-			if err2 == nil {
-				countStar = val
-			}
-		}
+		countStar = res
 	}
 
-	countFieldsQry := queryFields + name + ";"
-	res2, err := runQuery(client, countFieldsQry)
-	if err == nil {
-		parts := strings.Split(res2, "\n")
-		for i, field := range parts {
-			if field != "" && i > 0 {
-				countRow++
-			}
+	if countStar > 0 && countStar < maxRecordLimit {
+		res2, err := runCount(client, name)
+		if err == nil {
+			countRow = res2
 		}
-
 	}
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if countStar == countRow {
 		printer.AddField(" ✅ ")
-	} else if countRow == 10000 {
+	} else if countStar > maxRecordLimit {
 		printer.AddField(" ❗ ")
 	} else {
 		printer.AddField(" ❌ ")
 	}
 	printer.AddField(name)
-	printer.AddField(strconv.Itoa(countStar))
-	printer.AddField(strconv.Itoa(countRow))
+	printer.AddField(strconv.FormatInt(countStar, 10))
+	printer.AddField(strconv.FormatInt(countRow, 10))
 	if err != nil {
 		errFirstPart := err.Error()[0:20]
 		printer.AddField(errFirstPart)
@@ -165,34 +149,35 @@ func (r *externalTableCommand) Validate(client *odps.Odps, printer table.Printer
 	return err
 }
 
-func runQuery(client *odps.Odps, query string) (string, error) {
-	i := 5
-	for i > 1 {
-		instance, err := client.ExecSQl(query)
-		if err == nil {
-			err = instance.WaitForSuccess()
-			if err == nil {
-				res, err := instance.GetResult()
-				if err == nil {
-					for _, row := range res {
-						if row.Content() != "" {
-							return row.Content(), nil
-						}
-					}
-					return "", errors.New("not able to parse row")
-				}
-			}
-		}
+func runCountStar(client *sql.DB, name string) (int64, error) {
+	query := countSQL + name + ";"
+	rows, err := client.Query(query)
+	if err != nil {
+		return -1, err
+	}
+
+	rowCount := int64(0)
+	for rows.Next() {
+		err = rows.Scan(&rowCount)
 		if err != nil {
-			if strings.Contains(err.Error(), connErr) || strings.Contains(err.Error(), deadlineErr) {
-				time.Sleep(200 * time.Millisecond)
-				err = nil
-				i--
-				continue
-			} else {
-				return "", err
-			}
+			return -1, err
 		}
 	}
-	return "", errors.New("timeout")
+
+	return rowCount, nil
+}
+
+func runCount(client *sql.DB, name string) (int64, error) {
+	query := queryFields + name + ";"
+	rows, err := client.Query(query)
+	if err != nil {
+		return -1, err
+	}
+
+	rowCount := int64(0)
+	for rows.Next() {
+		rowCount++
+	}
+
+	return rowCount, nil
 }
