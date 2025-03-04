@@ -16,6 +16,7 @@ func NewTableCommand(cfg *config.Config) *cobra.Command {
 	cmd.AddCommand(
 		NewCountCommand(cfg),
 		NewReadCommand(cfg),
+		NewFetchDDLCommand(cfg),
 	)
 
 	return cmd

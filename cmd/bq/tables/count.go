@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"cloud.google.com/go/bigquery"
@@ -15,6 +14,7 @@ import (
 	"github.com/sbchaos/opms/external/gcp"
 	"github.com/sbchaos/opms/lib/cmdutil"
 	"github.com/sbchaos/opms/lib/config"
+	"github.com/sbchaos/opms/lib/names"
 	"github.com/sbchaos/opms/lib/table"
 	"github.com/sbchaos/opms/lib/term"
 )
@@ -26,6 +26,8 @@ type countCommand struct {
 
 	name     string
 	fileName string
+
+	mappingJson string
 }
 
 // NewCountCommand initializes command to count number of rows in table
@@ -41,6 +43,7 @@ func NewCountCommand(cfg *config.Config) *cobra.Command {
 
 	cmd.Flags().StringVarP(&count.name, "name", "n", "", "Table name")
 	cmd.Flags().StringVarP(&count.fileName, "filename", "f", "", "Filename with list of tables, - for stdin")
+	cmd.Flags().StringVarP(&count.mappingJson, "mapping", "m", "", "Project mapping for the names")
 
 	return cmd
 }
@@ -60,14 +63,25 @@ func (r *countCommand) RunE(_ *cobra.Command, _ []string) error {
 		tableNames = []string{r.name}
 	}
 
+	projectMapping := map[string]string{}
+	if r.mappingJson != "" {
+		err = cmdutil.ReadJsonFile(r.mappingJson, os.Stdin, &projectMapping)
+		if err != nil {
+			return err
+		}
+	}
+
 	if r.fileName != "" {
-		content, err := cmdutil.ReadFile(r.fileName, os.Stdin)
+		fields, err := cmdutil.ReadLines(r.fileName, os.Stdin)
 		if err != nil {
 			return err
 		}
 
-		fields := strings.Fields(string(content))
-		tableNames = append(tableNames, fields...)
+		mapNames, err := names.MapNames(projectMapping, nil, fields)
+		if err != nil {
+			return err
+		}
+		tableNames = mapNames
 	}
 	t := term.FromEnv(0, 0)
 	size, _ := t.Size(120)
