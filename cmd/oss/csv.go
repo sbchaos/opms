@@ -1,10 +1,12 @@
 package oss
 
 import (
+	"bytes"
 	"context"
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -28,6 +30,7 @@ type readCommand struct {
 	bucket string
 
 	tableName string
+	output    string
 }
 
 func NewReadCSVCommand(cfg *config.Config) *cobra.Command {
@@ -43,6 +46,7 @@ func NewReadCSVCommand(cfg *config.Config) *cobra.Command {
 	cmd.Flags().StringVarP(&read.name, "name", "n", "", "File name")
 	cmd.Flags().StringVarP(&read.tableName, "table", "t", "", "Table name")
 	cmd.Flags().StringVarP(&read.bucket, "bucket", "b", "", "Bucket name")
+	cmd.Flags().StringVarP(&read.output, "output", "o", "", "Write CSV before printing")
 	cmd.MarkFlagRequired("bucket")
 	return cmd
 }
@@ -79,7 +83,7 @@ func (r *readCommand) RunE(_ *cobra.Command, _ []string) error {
 		}
 	}
 
-	err = readFileFromBucket(ctx, client, r.bucket, name, printer)
+	err = r.readFileFromBucket(ctx, client, name, printer)
 	if err != nil {
 		return err
 	}
@@ -88,9 +92,9 @@ func (r *readCommand) RunE(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func readFileFromBucket(ctx context.Context, client *oss.Client, bucketName, objectKey string, printer table.Printer) error {
+func (r *readCommand) readFileFromBucket(ctx context.Context, client *oss.Client, objectKey string, printer table.Printer) error {
 	result, err := client.GetObject(ctx, &oss.GetObjectRequest{
-		Bucket: oss.Ptr(bucketName),
+		Bucket: oss.Ptr(r.bucket),
 		Key:    oss.Ptr(objectKey),
 	})
 	if err != nil {
@@ -99,14 +103,23 @@ func readFileFromBucket(ctx context.Context, client *oss.Client, bucketName, obj
 
 	defer result.Body.Close()
 
-	content, err := csv.NewReader(result.Body).ReadAll()
+	content, err := io.ReadAll(result.Body)
 	if err != nil {
 		return err
 	}
 
-	printer.AddHeader(append([]string{"row num"}, content[0]...))
+	if r.output != "" {
+		os.WriteFile(r.output, content, 0666)
+	}
 
-	for i, row := range content[1:] {
+	csvStr, err := csv.NewReader(bytes.NewReader(content)).ReadAll()
+	if err != nil {
+		return err
+	}
+
+	printer.AddHeader(append([]string{"row num"}, csvStr[0]...))
+
+	for i, row := range csvStr[1:] {
 		printer.AddField(strconv.Itoa(i))
 		for _, col := range row {
 			printer.AddField(col)

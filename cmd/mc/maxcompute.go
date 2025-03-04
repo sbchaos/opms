@@ -6,6 +6,7 @@ import (
 	"github.com/sbchaos/opms/cmd/mc/function"
 	"github.com/sbchaos/opms/cmd/mc/project"
 	"github.com/sbchaos/opms/cmd/mc/resource"
+	"github.com/sbchaos/opms/cmd/mc/sql"
 	"github.com/sbchaos/opms/cmd/mc/tables"
 	"github.com/sbchaos/opms/cmd/mc/verify"
 	"github.com/sbchaos/opms/lib/config"
@@ -23,6 +24,7 @@ func NewMaxcomputeCommand(cfg *config.Config) *cobra.Command {
 		tables.NewTableCommand(cfg),
 		resource.NewResourceCommand(cfg),
 		function.NewUDFCommand(cfg),
+		sql.NewSQLCommand(cfg),
 
 		verify.NewVerifyCommand(cfg),
 	)
