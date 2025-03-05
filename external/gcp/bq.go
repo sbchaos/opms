@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"sync"
 	"time"
 
 	"cloud.google.com/go/bigquery"
@@ -20,51 +21,134 @@ const (
 	connTimeout = 5 * time.Second
 )
 
-type Client struct {
-	*bigquery.Client
+//scopes := []string{
+//	"https://www.googleapis.com/auth/drive",
+//	"https://www.googleapis.com/auth/drive.file",
+//	"https://www.googleapis.com/auth/drive.readonly",
+//	"https://www.googleapis.com/auth/spreadsheets",
+//	"https://www.googleapis.com/auth/spreadsheets.readonly",
+//	bigquery.Scope,
+//}
+
+type ClientProvider struct {
+	bq         *bigquery.Client
+	static     bool
+	staticCred string
+
+	profile   *config.Profile
+	clientMap map[string]*bigquery.Client
+	mu        sync.Mutex
 }
 
-func NewClientFromConfig(cfg *config.Config) (*Client, error) {
-	ctx, cancelfunc := context.WithTimeout(context.Background(), connTimeout)
-	defer cancelfunc()
-
-	bqAccount := os.Getenv(BigqueryAccount)
-	if a := os.Getenv(bqAccount); a != "" {
-		return NewClient(ctx, bqAccount)
-	}
-
+func NewClientProvider(cfg *config.Config) (*ClientProvider, error) {
 	profile := cfg.GetCurrentProfile()
-	key := profile.GCPCred
-	if key == "" {
-		return nil, errors.New("key not found for Bigquery account")
+	bqAccount := os.Getenv(BigqueryAccount)
+	acc := os.Getenv(bqAccount)
+	if acc != "" {
+		return &ClientProvider{
+			staticCred: acc,
+			static:     true,
+			profile:    &profile,
+		}, nil
 	}
 
-	acc, err := keyring.Get(key)
+	if !profile.Dynamic {
+		key := profile.GCPCred
+		if key == "" {
+			return nil, errors.New("key not found for Bigquery account")
+		}
+
+		acc, err := keyring.Get(key)
+		if err != nil {
+			return nil, err
+		}
+
+		if acc != "" {
+			return &ClientProvider{
+				staticCred: acc,
+				static:     true,
+				profile:    &profile,
+			}, nil
+		} else {
+			return nil, errors.New("empty value for account")
+		}
+	}
+
+	return &ClientProvider{
+		static:    false,
+		profile:   &profile,
+		clientMap: make(map[string]*bigquery.Client),
+	}, nil
+}
+
+func (p *ClientProvider) GetClient(proj string, scopes ...string) (*bigquery.Client, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.static {
+		if p.bq != nil {
+			return p.bq, nil
+		}
+
+		client, err := NewClient(p.staticCred, proj, scopes)
+		if err != nil {
+			return nil, err
+		}
+		p.bq = client
+		return client, err
+	}
+
+	key := proj + "_gcp"
+	client, ok := p.clientMap[key]
+	if ok {
+		return client, nil
+	}
+
+	credKey, err := p.profile.GetCred(key)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewClient(ctx, acc)
+	client, ok = p.clientMap[credKey]
+	if ok {
+		p.clientMap[key] = client
+		return client, nil
+	}
+
+	cred, err := keyring.Get(credKey)
+	if err != nil {
+		return nil, err
+	}
+
+	clnt, err := NewClient(cred, proj, scopes)
+	if err != nil {
+		return nil, err
+	}
+
+	p.clientMap[key] = clnt
+	p.clientMap[credKey] = clnt
+	return clnt, nil
 }
 
-func NewClient(ctx context.Context, svcAccount string) (*Client, error) {
-	scopes := []string{
-		"https://www.googleapis.com/auth/drive",
-		"https://www.googleapis.com/auth/drive.file",
-		"https://www.googleapis.com/auth/drive.readonly",
-		"https://www.googleapis.com/auth/spreadsheets",
-		"https://www.googleapis.com/auth/spreadsheets.readonly",
-		bigquery.Scope,
-	}
+func NewClient(svcAccount string, proj string, scopes []string) (*bigquery.Client, error) {
+	scopes = append(scopes, bigquery.Scope)
+
+	ctx, cancelfunc := context.WithTimeout(context.Background(), connTimeout)
+	defer cancelfunc()
+
 	cred, err := google.CredentialsFromJSON(ctx, []byte(svcAccount), scopes...)
 	if err != nil {
 		return nil, errors.New("failed to read account")
 	}
 
-	c, err := bigquery.NewClient(ctx, cred.ProjectID, option.WithCredentials(cred))
+	if proj == "" {
+		proj = cred.ProjectID
+	}
+
+	c, err := bigquery.NewClient(ctx, proj, option.WithCredentials(cred))
 	if err != nil {
 		return nil, errors.New("failed to create BQ client")
 	}
 
-	return &Client{c}, nil
+	return c, nil
 }

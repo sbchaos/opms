@@ -2,9 +2,11 @@ package profiles
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -16,6 +18,8 @@ import (
 
 type createCommand struct {
 	cfg *config.Config
+
+	dynamic bool
 }
 
 // NewCreateProfileCommand returns data from the table
@@ -28,12 +32,14 @@ func NewCreateProfileCommand(cfg *config.Config) *cobra.Command {
 		RunE:    c.RunE,
 	}
 
+	cmd.Flags().BoolVarP(&c.dynamic, "dynamic", "d", false, "Create a dynamic profile")
+
 	return cmd
 }
 
-func (c createCommand) RunE(_ *cobra.Command, _ []string) error {
+func (c *createCommand) RunE(_ *cobra.Command, _ []string) error {
 	reader := bufio.NewReader(os.Stdin)
-	profile := config.Profiles{}
+	profile := config.Profile{}
 
 	fmt.Printf("Please provide profile name: ")
 	nameInput, err := reader.ReadString('\n')
@@ -59,6 +65,15 @@ func (c createCommand) RunE(_ *cobra.Command, _ []string) error {
 	if err == nil && key != "" {
 		profile.MCCred = key
 		fmt.Printf("Stored creds for Maxcompute\n")
+	}
+
+	if c.dynamic {
+		profile.Dynamic = true
+		profile.Creds = make(map[string]string)
+		err := StoreDynamicCreds(reader, &profile)
+		if err != nil {
+			return err
+		}
 	}
 
 	c.cfg.AvailableProfiles = append(c.cfg.AvailableProfiles, profile)
@@ -109,7 +124,7 @@ func getInput(reader *bufio.Reader) string {
 }
 
 func StoreCredsFor(reader *bufio.Reader, name, sys string) (string, error) {
-	fmt.Printf("Want to continue(yes/no) for %s: ", sys)
+	fmt.Printf("Store for %s (yes/no): ", sys)
 	proceed := getYesNo(reader)
 	if !proceed {
 		return "", nil
@@ -130,4 +145,88 @@ func StoreCredsFor(reader *bufio.Reader, name, sys string) (string, error) {
 	}
 
 	return key, nil
+}
+
+func StoreDynamicCreds(reader *bufio.Reader, p *config.Profile) error {
+	fmt.Printf("Creating dynamic creds\n")
+
+	fmt.Printf("Please provide system name (gcp|mc) :")
+	sys, err := reader.ReadString('\n')
+	if err != nil {
+		return err
+	}
+
+	sys = strings.ToLower(strings.TrimSpace(sys))
+
+	fmt.Printf("Please provide suffix for json files: ")
+	suffix, err := reader.ReadString('\n')
+	if err != nil {
+		return err
+	}
+	suffix = strings.TrimSpace(suffix)
+
+	fmt.Printf("\nProvide path for credentials folder: ")
+	dir := getInput(reader)
+
+	files, err := cmdutil.ListFiles(dir)
+	if err != nil {
+		return err
+	}
+
+	fileSuffix := suffix + ".json"
+	for _, file := range files {
+		if strings.HasSuffix(file, fileSuffix) {
+			fmt.Printf("Found file %s\n", file)
+			err = storeCred(file, sys, p, reader)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func storeCred(filename string, sys string, profile *config.Profile, reader *bufio.Reader) error {
+	content, err := cmdutil.ReadFile(filename, nil)
+	if err != nil {
+		return err
+	}
+
+	var mapping map[string]string
+	err = json.Unmarshal(content, &mapping)
+	if err != nil {
+		return err
+	}
+
+	proj, ok := mapping["project_id"]
+	if !ok {
+		proj, ok = mapping["project_name"]
+		if !ok {
+			proj = filepath.Base(filename)
+		}
+	}
+
+	keyringKey := proj + "_" + profile.Name
+	err = keyring.Set(keyringKey, string(content))
+	if err != nil {
+		return err
+	}
+
+	name := proj + "_" + sys
+	profile.SetCred(name, keyringKey)
+
+	fmt.Printf("Please provide projects for %s (, separated):", proj)
+	otherProjs, err := reader.ReadString('\n')
+	if err != nil {
+		return err
+	}
+
+	others := strings.Split(otherProjs, ",")
+	for _, other := range others {
+		p1 := strings.TrimSpace(other)
+		n1 := p1 + "_" + sys
+		profile.SetCred(n1, keyringKey)
+	}
+
+	return nil
 }

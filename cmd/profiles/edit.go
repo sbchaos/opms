@@ -30,14 +30,14 @@ func NewEditProfileCommand(cfg *config.Config) *cobra.Command {
 }
 
 func (s *edit) RunE(_ *cobra.Command, _ []string) error {
-	fmt.Printf("Available Profiles:\n")
+	fmt.Printf("Available Profile:\n")
 	for i, p := range s.cfg.AvailableProfiles {
 		fmt.Printf("%d. %s\n", i+1, p.Name)
 	}
 
 	updatedProfile := s.chooseProfile()
 
-	var newProfiles []config.Profiles
+	var newProfiles []config.Profile
 	for _, pr := range s.cfg.AvailableProfiles {
 		if pr.Name != updatedProfile.Name {
 			newProfiles = append(newProfiles, pr)
@@ -55,7 +55,7 @@ func (s *edit) RunE(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func (s *edit) chooseProfile() *config.Profiles {
+func (s *edit) chooseProfile() *config.Profile {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Printf("Please choose a profile: ")
 	for {
@@ -82,7 +82,7 @@ func (s *edit) chooseProfile() *config.Profiles {
 	}
 }
 
-func editProfile(p *config.Profiles, reader *bufio.Reader) {
+func editProfile(p *config.Profile, reader *bufio.Reader) {
 	if p.GCPCred == "" {
 		key, err := StoreCredsFor(reader, p.Name, "GCP")
 		if err == nil && key != "" {

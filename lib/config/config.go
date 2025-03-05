@@ -7,7 +7,6 @@ package config
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -41,11 +40,10 @@ var (
 )
 
 type Config struct {
-	Version           string     `json:"version"`
-	CurrentProfile    string     `json:"current_profile"`
-	AvailableProfiles []Profiles `json:"available_profiles"`
+	Version           string    `json:"version"`
+	CurrentProfile    string    `json:"current_profile"`
+	AvailableProfiles []Profile `json:"available_profiles"`
 	//Aliases           *AliasConfig `json:"aliases"`
-	//AuthConfig        *AuthConfig  `json:"auth"`
 	mu sync.RWMutex
 }
 
@@ -120,7 +118,7 @@ func generalConfigFile() string {
 }
 
 func confFromFile(filename string) (*Config, error) {
-	data, err := readFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -163,42 +161,21 @@ func CacheDir() string {
 	}
 }
 
-func readFile(filename string) ([]byte, error) {
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	data, err := io.ReadAll(f)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
 func writeFile(filename string, data []byte) (writeErr error) {
-	if writeErr = os.MkdirAll(filepath.Dir(filename), 0771); writeErr != nil {
-		return
+	err := os.MkdirAll(filepath.Dir(filename), 0771)
+	if err != nil {
+		return err
 	}
-	var file *os.File
-	if file, writeErr = os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600); writeErr != nil {
-		return
-	}
-	defer func() {
-		if err := file.Close(); writeErr == nil && err != nil {
-			writeErr = err
-		}
-	}()
-	_, writeErr = file.Write(data)
-	return
+
+	return os.WriteFile(filename, data, 0600)
 }
 
-func (c *Config) GetCurrentProfile() Profiles {
+func (c *Config) GetCurrentProfile() Profile {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	if len(c.AvailableProfiles) < 1 {
-		return Profiles{}
+		return Profile{}
 	}
 
 	for _, p := range c.AvailableProfiles {

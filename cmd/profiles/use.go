@@ -31,7 +31,7 @@ func NewUseProfileCommand(cfg *config.Config) *cobra.Command {
 func (u useCmd) RunE(_ *cobra.Command, _ []string) error {
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Printf("Available Profiles:\n")
+	fmt.Printf("Available Profile:\n")
 	for i, p := range u.cfg.AvailableProfiles {
 		fmt.Printf("%d. %s\n", i+1, p.Name)
 	}

@@ -42,7 +42,7 @@ func NewFetchDDLCommand(cfg *config.Config) *cobra.Command {
 }
 
 func (m *fetchDDL) RunE(_ *cobra.Command, _ []string) error {
-	client, err := gcp.NewClientFromConfig(m.cfg)
+	client, err := gcp.NewClientProvider(m.cfg)
 	if err != nil {
 		return err
 	}
@@ -91,8 +91,13 @@ func (m *fetchDDL) RunE(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func queryDDL(ctx context.Context, client *gcp.Client, tableName string, printer table.Printer) error {
+func queryDDL(ctx context.Context, provider *gcp.ClientProvider, tableName string, printer table.Printer) error {
 	tb, err := names.FromTableName(tableName)
+	if err != nil {
+		return err
+	}
+
+	client, err := provider.GetClient(tb.Schema.ProjectID)
 	if err != nil {
 		return err
 	}

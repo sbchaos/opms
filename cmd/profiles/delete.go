@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/sbchaos/opms/lib/config"
+	"github.com/sbchaos/opms/lib/keyring"
 )
 
 type delete struct {
@@ -31,7 +32,7 @@ func NewDeleteProfileCommand(cfg *config.Config) *cobra.Command {
 func (s delete) RunE(_ *cobra.Command, _ []string) error {
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Printf("Available Profiles:\n")
+	fmt.Printf("Available Profile:\n")
 	for i, p := range s.cfg.AvailableProfiles {
 		fmt.Printf("%d. %s\n", i+1, p.Name)
 	}
@@ -55,9 +56,23 @@ func (s delete) RunE(_ *cobra.Command, _ []string) error {
 			continue
 		}
 
-		var restOfProfile []config.Profiles
+		var restOfProfile []config.Profile
 		for _, p := range s.cfg.AvailableProfiles {
-			if p.Name != nameInput {
+			if p.Name == nameInput {
+				if p.GCPCred != "" {
+					keyring.Delete(p.GCPCred)
+				}
+				if p.MCCred != "" {
+					keyring.Delete(p.GCPCred)
+				}
+				if p.Airflow != "" {
+					keyring.Delete(p.GCPCred)
+				}
+
+				for _, v := range p.Creds {
+					keyring.Delete(v)
+				}
+			} else {
 				restOfProfile = append(restOfProfile, p)
 			}
 		}

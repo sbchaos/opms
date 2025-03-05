@@ -21,6 +21,8 @@ import (
 
 var timeout = time.Minute * 10
 
+var driveScope = "https://www.googleapis.com/auth/drive"
+
 type countCommand struct {
 	cfg *config.Config
 
@@ -49,7 +51,7 @@ func NewCountCommand(cfg *config.Config) *cobra.Command {
 }
 
 func (r *countCommand) RunE(_ *cobra.Command, _ []string) error {
-	client, err := gcp.NewClientFromConfig(r.cfg)
+	provider, err := gcp.NewClientProvider(r.cfg)
 	if err != nil {
 		return err
 	}
@@ -94,7 +96,7 @@ func (r *countCommand) RunE(_ *cobra.Command, _ []string) error {
 
 	errs := make([]error, 0)
 	for _, t1 := range tableNames {
-		err = queryTable(ctx, client, t1, printer)
+		err = queryTable(ctx, provider, t1, printer)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -110,7 +112,17 @@ func (r *countCommand) RunE(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func queryTable(ctx context.Context, client *gcp.Client, tableName string, printer table.Printer) error {
+func queryTable(ctx context.Context, provider *gcp.ClientProvider, tableName string, printer table.Printer) error {
+	tb, err := names.FromTableName(tableName)
+	if err != nil {
+		return err
+	}
+
+	client, err := provider.GetClient(tb.Schema.ProjectID, driveScope)
+	if err != nil {
+		return err
+	}
+
 	qr := `SELECT COUNT(*) FROM ` + tableName
 	q := client.Query(qr)
 	printer.AddField(tableName)

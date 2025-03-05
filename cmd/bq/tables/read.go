@@ -13,6 +13,7 @@ import (
 
 	"github.com/sbchaos/opms/external/gcp"
 	"github.com/sbchaos/opms/lib/config"
+	"github.com/sbchaos/opms/lib/names"
 	"github.com/sbchaos/opms/lib/table"
 	"github.com/sbchaos/opms/lib/term"
 )
@@ -41,7 +42,7 @@ func NewReadCommand(cfg *config.Config) *cobra.Command {
 }
 
 func (r *readCommand) RunE(_ *cobra.Command, _ []string) error {
-	client, err := gcp.NewClientFromConfig(r.cfg)
+	provider, err := gcp.NewClientProvider(r.cfg)
 	if err != nil {
 		return err
 	}
@@ -54,7 +55,7 @@ func (r *readCommand) RunE(_ *cobra.Command, _ []string) error {
 
 	printer := table.New(os.Stdout, t.IsTerminalOutput(), size)
 
-	err = readTable(ctx, client, r.name, printer)
+	err = readTable(ctx, provider, r.name, printer)
 	if err != nil {
 		return err
 	}
@@ -63,7 +64,17 @@ func (r *readCommand) RunE(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func readTable(ctx context.Context, client *gcp.Client, tableName string, printer table.Printer) error {
+func readTable(ctx context.Context, provider *gcp.ClientProvider, tableName string, printer table.Printer) error {
+	tb, err := names.FromTableName(tableName)
+	if err != nil {
+		return err
+	}
+
+	client, err := provider.GetClient(tb.Schema.ProjectID)
+	if err != nil {
+		return err
+	}
+
 	qr := `SELECT * FROM ` + tableName
 	q := client.Query(qr)
 

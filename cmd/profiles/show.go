@@ -39,7 +39,7 @@ func NewShowProfileCommand(cfg *config.Config) *cobra.Command {
 func (s show) RunE(_ *cobra.Command, _ []string) error {
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Printf("Available Profiles:\n")
+	fmt.Printf("Available Profile:\n")
 	for i, p := range s.cfg.AvailableProfiles {
 		msg := ""
 		if p.Name == s.cfg.CurrentProfile {
@@ -79,12 +79,12 @@ func (s show) RunE(_ *cobra.Command, _ []string) error {
 	}
 }
 
-func showProfile(p config.Profiles) {
+func showProfile(p config.Profile) {
 	bytes, _ := json.Marshal(p)
 	jsonpretty.Format(os.Stdout, strings.NewReader(string(bytes)), " ", true)
 }
 
-func showFromKeyring(p config.Profiles) {
+func showFromKeyring(p config.Profile) {
 	if p.GCPCred != "" {
 		fmt.Printf("GCP:\n")
 		val, err := keyring.Get(p.GCPCred)
