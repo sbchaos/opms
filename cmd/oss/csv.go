@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/sbchaos/opms/external/mc"
+	"github.com/sbchaos/opms/lib/cmdutil"
 	"github.com/sbchaos/opms/lib/config"
 	"github.com/sbchaos/opms/lib/table"
 	"github.com/sbchaos/opms/lib/term"
@@ -109,7 +110,7 @@ func (r *readCommand) readFileFromBucket(ctx context.Context, client *oss.Client
 	}
 
 	if r.output != "" {
-		os.WriteFile(r.output, content, 0666)
+		cmdutil.WriteFile(r.output, content)
 	}
 
 	csvStr, err := csv.NewReader(bytes.NewReader(content)).ReadAll()

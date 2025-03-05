@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -33,4 +34,42 @@ func ReadLines(filename string, stdin io.ReadCloser) ([]string, error) {
 	}
 
 	return strings.Fields(string(file)), nil
+}
+
+func ListFiles(dirName string) ([]string, error) {
+	return recursiveListFiles(dirName, 1)
+}
+
+func ListAllFiles(dirName string) ([]string, error) {
+	return recursiveListFiles(dirName, 100)
+}
+
+func recursiveListFiles(dirName string, level int) ([]string, error) {
+	entries, err := os.ReadDir(dirName)
+	if err != nil {
+		return nil, err
+	}
+
+	var names []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			filepath := path.Join(dirName, entry.Name())
+			names = append(names, filepath)
+			continue
+		}
+
+		if level <= 1 {
+			continue
+		}
+
+		newPath := path.Join(dirName, entry.Name())
+		newLevel := level - 1
+		n1, errChild := recursiveListFiles(newPath, newLevel)
+		names = append(names, n1...)
+		if errChild != nil {
+			return names, errChild
+		}
+	}
+
+	return names, nil
 }

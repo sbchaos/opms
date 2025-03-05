@@ -64,7 +64,6 @@ const defaultConfigStr = `
 
 	"current_profile": "",
 	"available_profiles": [],
-	
 
 	"auth": null,
 }`

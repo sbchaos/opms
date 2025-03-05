@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
 
 	"cloud.google.com/go/bigquery"
 	"github.com/spf13/cobra"
@@ -128,7 +127,7 @@ func queryDDL(ctx context.Context, client *gcp.Client, tableName string, printer
 		}
 
 		toWritePath := path.Join(tb.Schema.ProjectID, tableName+".sql")
-		err = WriteFile(toWritePath, content)
+		err = cmdutil.WriteFileAndDir(toWritePath, []byte(content))
 		if err != nil {
 			fetchFailure(printer, "failure in write file")
 			return err
@@ -138,18 +137,6 @@ func queryDDL(ctx context.Context, client *gcp.Client, tableName string, printer
 		printer.EndRow()
 	}
 	return nil
-}
-
-func WriteFile(filePath string, content string) error {
-	if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-		return err
-	}
-	fileSpec, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("error creating spec")
-	}
-	_, err = fileSpec.WriteString(content)
-	return err
 }
 
 func fetchFailure(printer table.Printer, message string) {
