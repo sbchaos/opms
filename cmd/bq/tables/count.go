@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"cloud.google.com/go/bigquery"
@@ -15,6 +16,7 @@ import (
 	"github.com/sbchaos/opms/lib/cmdutil"
 	"github.com/sbchaos/opms/lib/config"
 	"github.com/sbchaos/opms/lib/names"
+	"github.com/sbchaos/opms/lib/pool"
 	"github.com/sbchaos/opms/lib/table"
 	"github.com/sbchaos/opms/lib/term"
 )
@@ -30,6 +32,8 @@ type countCommand struct {
 	fileName string
 
 	mappingJson string
+	workers     int
+	mu          sync.Mutex
 }
 
 // NewCountCommand initializes command to count number of rows in table
@@ -46,6 +50,7 @@ func NewCountCommand(cfg *config.Config) *cobra.Command {
 	cmd.Flags().StringVarP(&count.name, "name", "n", "", "Table name")
 	cmd.Flags().StringVarP(&count.fileName, "filename", "f", "", "Filename with list of tables, - for stdin")
 	cmd.Flags().StringVarP(&count.mappingJson, "mapping", "m", "", "Project mapping for the names")
+	cmd.Flags().IntVarP(&count.workers, "workers", "w", 1, "Number of parallel workers")
 
 	return cmd
 }
@@ -94,25 +99,38 @@ func (r *countCommand) RunE(_ *cobra.Command, _ []string) error {
 	printer := table.New(os.Stdout, t.IsTerminalOutput(), size)
 	printer.AddHeader([]string{"Table", "Count", "Error"})
 
-	errs := make([]error, 0)
-	for _, t1 := range tableNames {
-		err = queryTable(ctx, provider, t1, printer)
-		if err != nil {
-			errs = append(errs, err)
+	tasks := make([]func() pool.JobResult[string], len(tableNames))
+	for i, t1 := range tableNames {
+		t1 := t1
+		tasks[i] = func() pool.JobResult[string] {
+			err = r.queryTable(ctx, provider, t1, printer)
+			return pool.JobResult[string]{
+				Output: t1,
+				Err:    err,
+			}
 		}
 	}
 
+	outchan := pool.RunWithWorkers(r.workers, tasks)
+
 	err = printer.Render()
-	if len(errs) != 0 {
-		fmt.Println("Errors:")
-		for _, err := range errs {
-			fmt.Println("  " + err.Error())
+	if err != nil {
+		return fmt.Errorf("failed to print table: %w", err)
+	}
+
+	fmt.Println()
+	fmt.Println()
+	fmt.Fprintln(os.Stderr, "Error(s) encountered:")
+	for out := range outchan {
+		if out.Err != nil {
+			fmt.Fprintf(os.Stderr, "Name: %s, Err: %s\n", out.Output, out.Err)
 		}
 	}
+
 	return nil
 }
 
-func queryTable(ctx context.Context, provider *gcp.ClientProvider, tableName string, printer table.Printer) error {
+func (r *countCommand) queryTable(ctx context.Context, provider *gcp.ClientProvider, tableName string, printer table.Printer) error {
 	tb, err := names.FromTableName(tableName)
 	if err != nil {
 		return err
@@ -125,11 +143,13 @@ func queryTable(ctx context.Context, provider *gcp.ClientProvider, tableName str
 
 	qr := `SELECT COUNT(*) FROM ` + tableName
 	q := client.Query(qr)
-	printer.AddField(tableName)
 
 	it, err := q.Read(ctx)
 	if err != nil {
+		r.mu.Lock()
+		printer.AddField(tableName)
 		addFailure(printer, "permission issue")
+		r.mu.Unlock()
 		return fmt.Errorf("error while reading from bq: %w", err)
 	}
 	for {
@@ -139,17 +159,26 @@ func queryTable(ctx context.Context, provider *gcp.ClientProvider, tableName str
 			break
 		}
 		if err != nil {
+			r.mu.Lock()
+			printer.AddField(tableName)
 			addFailure(printer, "failure in query")
+			r.mu.Unlock()
 			return err
 		}
 
 		if len(row) != 1 {
+			r.mu.Lock()
+			printer.AddField(tableName)
 			addFailure(printer, "too many rows")
+			r.mu.Unlock()
 		}
 
+		r.mu.Lock()
+		printer.AddField(tableName)
 		printer.AddField(fmt.Sprintf("%v", row[0]))
 		printer.AddField("")
 		printer.EndRow()
+		r.mu.Unlock()
 	}
 	return nil
 }
