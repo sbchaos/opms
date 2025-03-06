@@ -107,6 +107,10 @@ func (r *etCommand) PreRunE(_ *cobra.Command, _ []string) error {
 		fmt.Println("No mapping found for project")
 	}
 
+	reqFn := func(_ string) error {
+		return nil
+	}
+
 	r.requiredList = map[string]string{}
 	if r.required != "" {
 		content, err := cmdutil.ReadFile(r.required, os.Stdin)
@@ -116,15 +120,15 @@ func (r *etCommand) PreRunE(_ *cobra.Command, _ []string) error {
 		for _, st := range strings.Fields(string(content)) {
 			r.requiredList[st] = st
 		}
+
+		reqFn = func(name string) error {
+			if r.requiredList[name] != "" {
+				return nil
+			}
+			return ErrNotReq
+		}
 	} else {
 		fmt.Println("Processing all queries")
-	}
-
-	reqFn := func(name string) error {
-		if r.requiredList[name] != "" {
-			return nil
-		}
-		return ErrNotReq
 	}
 
 	r.parser, err = parse.NewDDLParser(nil, reqFn)
