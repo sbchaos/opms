@@ -97,7 +97,7 @@ func queryDDL(ctx context.Context, provider *gcp.ClientProvider, tableName strin
 		return err
 	}
 
-	client, err := provider.GetClient(tb.Schema.ProjectID)
+	client, err := provider.GetClient(tb.Schema.ProjectID, driveScope)
 	if err != nil {
 		return err
 	}

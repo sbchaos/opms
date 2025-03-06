@@ -70,7 +70,7 @@ func readTable(ctx context.Context, provider *gcp.ClientProvider, tableName stri
 		return err
 	}
 
-	client, err := provider.GetClient(tb.Schema.ProjectID)
+	client, err := provider.GetClient(tb.Schema.ProjectID, driveScope)
 	if err != nil {
 		return err
 	}
