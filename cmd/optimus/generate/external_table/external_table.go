@@ -44,6 +44,9 @@ type etCommand struct {
 	projMapJson string
 	projMap     map[string]string
 
+	multiEnvProj    string
+	multiEnvProjMap map[string]string
+
 	required     string
 	requiredList map[string]string
 
@@ -67,6 +70,7 @@ func NewExternalTableCommand(cfg *config.Config) *cobra.Command {
 
 	cmd.Flags().StringVarP(&ec.typeMapJson, "type-map", "t", "", "Mapping json of BQ to maxcompute type")
 	cmd.Flags().StringVarP(&ec.projMapJson, "proj-map", "p", "", "Mapping json of BQ to maxcompute projects")
+	cmd.Flags().StringVarP(&ec.multiEnvProj, "multi-proj", "m", "", "Mapping json of proj for Multi env support")
 	cmd.Flags().StringVarP(&ec.required, "required", "r", "", "List of required tables, - for stdin")
 	cmd.MarkFlagRequired("type-map")
 	cmd.MarkFlagRequired("proj-map")
@@ -105,6 +109,15 @@ func (r *etCommand) PreRunE(_ *cobra.Command, _ []string) error {
 		r.projMap = projMap
 	} else {
 		fmt.Println("No mapping found for project")
+	}
+
+	r.multiEnvProjMap = map[string]string{}
+	if r.multiEnvProj != "" {
+		multiMap, err := readJson(r.multiEnvProj)
+		if err != nil {
+			return err
+		}
+		r.multiEnvProjMap = multiMap
 	}
 
 	reqFn := func(_ string) error {
@@ -227,9 +240,15 @@ func (r *etCommand) processQuery(name, query string, printer table.Printer) erro
 	}
 
 	parts := strings.Split(y1.FullName, ".")
+	proj := parts[0]
+	projVar, ok := r.multiEnvProjMap[proj]
+	if ok {
+		proj = projVar
+	}
+
 	yctx := &YamlContext{
 		Et:       y1.Et,
-		Proj:     parts[0],
+		Proj:     proj,
 		Schema:   parts[1],
 		Name:     parts[2],
 		FullName: y1.FullName,
