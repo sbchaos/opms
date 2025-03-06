@@ -3,6 +3,8 @@ package resource
 import (
 	"fmt"
 	"strings"
+
+	"github.com/sbchaos/opms/lib/names"
 )
 
 const (
@@ -27,19 +29,17 @@ func MapExternalTable(spec *ExternalTable, projectMapping, typeMapping map[strin
 		Source:      MapExternalSourceConfig(spec.Source),
 	}
 
-	split := strings.Split(spec.Name, ".")
-	proj := split[0]
-	p1, ok := projectMapping[proj]
-	if ok {
-		proj = p1
+	oldName := spec.Name
+	name, err := names.MapName(projectMapping, oldName)
+	if err != nil {
+		return nil, err
 	}
+	spec.Name = name
 
-	dbName := split[1]
-	resName := split[2]
 	mapped := &MappedExtTable{
-		Et:       mcET,
-		FullName: fmt.Sprintf("%s.%s.%s", proj, dbName, resName),
-		OldName:  strings.Join(split, "."),
+		Et:       &mcET,
+		FullName: name,
+		OldName:  oldName,
 	}
 
 	return mapped, nil

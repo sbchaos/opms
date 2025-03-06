@@ -14,26 +14,31 @@ import (
 type mapNameCommand struct {
 	cfg *config.Config
 
-	name       string
-	namesFile  string
-	projMap    string
-	datesetMap string
+	name      string
+	namesFile string
+	projMap   string
 }
 
 func NewMapNameCommand(cfg *config.Config) *cobra.Command {
 	mapName := &mapNameCommand{cfg: cfg}
 
 	cmd := &cobra.Command{
-		Use:     "map_name",
-		Short:   "Map the table names using project",
-		Example: "opms opt map_name",
-		RunE:    mapName.RunE,
+		Use:   "map_name",
+		Short: "Map the table names using project",
+		Example: `opms opt map_name
+It can provide an mapping file in json format.
+eg
+{
+"proj_a": "proj_b",
+"proj_b.dataset_b": "proj_c.dataset_d"
+}
+`,
+		RunE: mapName.RunE,
 	}
 
 	cmd.Flags().StringVarP(&mapName.name, "name", "n", "", "Table name")
 	cmd.Flags().StringVarP(&mapName.namesFile, "names-file", "f", "", "Table names file")
-	cmd.Flags().StringVarP(&mapName.projMap, "proj", "p", "", "Project name mapping")
-	cmd.Flags().StringVarP(&mapName.datesetMap, "ds", "d", "", "Dataset name mapping")
+	cmd.Flags().StringVarP(&mapName.projMap, "mapping", "m", "", "Mapping for project dataset")
 	return cmd
 }
 
@@ -41,14 +46,6 @@ func (r *mapNameCommand) RunE(_ *cobra.Command, _ []string) error {
 	projectMapping := map[string]string{}
 	if r.projMap != "" {
 		err := cmdutil.ReadJsonFile(r.projMap, os.Stdin, &projectMapping)
-		if err != nil {
-			return err
-		}
-	}
-
-	datasetMapping := map[string]string{}
-	if r.datesetMap != "" {
-		err := cmdutil.ReadJsonFile(r.datesetMap, os.Stdin, &datasetMapping)
 		if err != nil {
 			return err
 		}
@@ -67,7 +64,7 @@ func (r *mapNameCommand) RunE(_ *cobra.Command, _ []string) error {
 		tableNames = lines
 	}
 
-	mappedNames, err := names.MapNames(projectMapping, datasetMapping, tableNames)
+	mappedNames, err := names.MapNames(projectMapping, tableNames)
 	if err != nil {
 		return err
 	}

@@ -84,7 +84,7 @@ func (r *countCommand) RunE(_ *cobra.Command, _ []string) error {
 			return err
 		}
 
-		mapNames, err := names.MapNames(projectMapping, nil, fields)
+		mapNames, err := names.MapNames(projectMapping, fields)
 		if err != nil {
 			return err
 		}
