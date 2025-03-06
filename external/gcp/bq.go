@@ -9,7 +9,9 @@ import (
 
 	"cloud.google.com/go/bigquery"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
+	"google.golang.org/api/sheets/v4"
 
 	"github.com/sbchaos/opms/lib/config"
 	"github.com/sbchaos/opms/lib/keyring"
@@ -23,18 +25,21 @@ const (
 
 type ClientProvider struct {
 	bq         *bigquery.Client
+	drive      *drive.Service
+	sheets     *sheets.Service
 	static     bool
 	staticCred string
 
 	profile   *config.Profile
 	clientMap map[string]*bigquery.Client
+	driveMap  map[string]*drive.Service
+	sheetMap  map[string]*sheets.Service
 	mu        sync.Mutex
 }
 
 func NewClientProvider(cfg *config.Config) (*ClientProvider, error) {
 	profile := cfg.GetCurrentProfile()
-	bqAccount := os.Getenv(BigqueryAccount)
-	acc := os.Getenv(bqAccount)
+	acc := os.Getenv(BigqueryAccount)
 	if acc != "" {
 		return &ClientProvider{
 			staticCred: acc,
@@ -69,6 +74,8 @@ func NewClientProvider(cfg *config.Config) (*ClientProvider, error) {
 		static:    false,
 		profile:   &profile,
 		clientMap: make(map[string]*bigquery.Client),
+		driveMap:  make(map[string]*drive.Service),
+		sheetMap:  make(map[string]*sheets.Service),
 	}, nil
 }
 
