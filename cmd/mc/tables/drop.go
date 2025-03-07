@@ -12,6 +12,7 @@ import (
 	mcc "github.com/sbchaos/opms/external/mc"
 	"github.com/sbchaos/opms/lib/cmdutil"
 	"github.com/sbchaos/opms/lib/config"
+	"github.com/sbchaos/opms/lib/names"
 	"github.com/sbchaos/opms/lib/table"
 	"github.com/sbchaos/opms/lib/term"
 )
@@ -48,14 +49,10 @@ func (r *dropCommand) RunE(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	mapping := make(map[mcc.ProjectSchema][]string)
+	var tableNames []string
+	mapping := make(map[names.Schema][]string)
 	if r.name != "" {
-		ps, name, err := mcc.SplitParts(r.name)
-		if err != nil {
-			return err
-		}
-
-		mapping[ps] = []string{name}
+		tableNames = append(tableNames, r.name)
 
 		if r.fileName != "" {
 			return errors.New("--filename flag cannot be used along with name")
@@ -63,26 +60,19 @@ func (r *dropCommand) RunE(_ *cobra.Command, _ []string) error {
 	}
 
 	if r.fileName != "" {
-		content, err := cmdutil.ReadFile(r.fileName, os.Stdin)
+		lines, err := cmdutil.ReadLines(r.fileName, os.Stdin)
 		if err != nil {
 			return err
 		}
-		fields := strings.Fields(string(content))
-		for _, field := range fields {
-			ps, name, err := mcc.SplitParts(field)
-			if err != nil {
-				fmt.Printf("ignoring invalid table name %s\n", field)
-			}
-
-			mapping[ps] = append(mapping[ps], name)
-		}
+		tableNames = lines
 	}
+	mapping = names.GroupTableNames(tableNames)
 
 	printer := table.New(os.Stdout, t.IsTerminalOutput(), size)
 
 	for ps, tables := range mapping {
-		client.SetDefaultProjectName(ps.ProjectName)
-		client.SetCurrentSchemaName(ps.SchemaName)
+		client.SetDefaultProjectName(ps.ProjectID)
+		client.SetCurrentSchemaName(ps.SchemaID)
 
 		for _, t1 := range tables {
 			for {
@@ -109,14 +99,14 @@ func (r *dropCommand) RunE(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func dropFailure(printer table.Printer, ps mcc.ProjectSchema, table string) {
+func dropFailure(printer table.Printer, n1 names.Schema, n2 string) {
 	printer.AddField(" ❌ ")
-	printer.AddField(ps.Table(table))
+	printer.AddField(n1.TableName(n2))
 	printer.EndRow()
 }
 
-func dropSuccess(printer table.Printer, ps mcc.ProjectSchema, table string) {
+func dropSuccess(printer table.Printer, n1 names.Schema, n2 string) {
 	printer.AddField(" ✅ ")
-	printer.AddField(ps.Table(table))
+	printer.AddField(n1.TableName(n2))
 	printer.EndRow()
 }

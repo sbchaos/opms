@@ -26,6 +26,10 @@ func (s Schema) String() string {
 	return fmt.Sprintf("%s.%s", s.ProjectID, s.SchemaID)
 }
 
+func (s Schema) TableName(name string) string {
+	return fmt.Sprintf("%s.%s.%s", s.ProjectID, s.SchemaID, name)
+}
+
 func (t Table) String() string {
 	return fmt.Sprintf("%s.%s.%s", t.Schema.ProjectID, t.Schema.SchemaID, t.TableID)
 }

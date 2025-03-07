@@ -78,7 +78,7 @@ func (r *listCommand) RunE(_ *cobra.Command, _ []string) error {
 	size, _ := t.Size(120)
 
 	printer := table.New(os.Stdout, t.IsTerminalOutput(), size)
-	fn := setupPrinter(printer, proj, schema)
+	fn := setupPrinter(printer)
 
 	tables.List(fn, filters...)
 
@@ -89,8 +89,7 @@ func (r *listCommand) RunE(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func setupPrinter(printer table.Printer, proj string, schema string) func(*odps.Table, error) {
-	//prefix := proj + "." + schema + "."
+func setupPrinter(printer table.Printer) func(*odps.Table, error) {
 	printer.AddHeader([]string{"Table Name", "Type", "Last Update"})
 
 	return func(table *odps.Table, err error) {

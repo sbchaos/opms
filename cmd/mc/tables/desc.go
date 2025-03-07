@@ -8,6 +8,7 @@ import (
 
 	mcc "github.com/sbchaos/opms/external/mc"
 	"github.com/sbchaos/opms/lib/config"
+	"github.com/sbchaos/opms/lib/names"
 )
 
 type descCommand struct {
@@ -38,26 +39,26 @@ func (r *descCommand) RunE(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	ps, name, err := mcc.SplitParts(r.name)
+	tab, err := names.FromTableName(r.name)
 	if err != nil {
 		return err
 	}
 
-	client.SetDefaultProjectName(ps.ProjectName)
-	client.SetCurrentSchemaName(ps.SchemaName)
+	client.SetDefaultProjectName(tab.Schema.ProjectID)
+	client.SetCurrentSchemaName(tab.Schema.SchemaID)
 
-	tab := client.Table(name)
-	err = tab.Load()
+	tabl := client.Table(tab.TableID)
+	err = tabl.Load()
 	if err != nil {
 		return fmt.Errorf("failed to load table: %w", err)
 	}
 
-	printTable(ps, tab)
+	printTable(tab, tabl)
 	return nil
 }
 
-func printTable(ps mcc.ProjectSchema, t *odps.Table) {
-	fmt.Printf("Name:\t%s\n", ps.Table(t.Name()))
+func printTable(ps names.Table, t *odps.Table) {
+	fmt.Printf("Name:\t%s\n", ps.String())
 	fmt.Printf("Type:\t%s\n", t.Type())
 	fmt.Printf("Comment:\t%s\n", t.Comment())
 	fmt.Printf("Last Changed Time:\t%s\n", t.LastModifiedTime())

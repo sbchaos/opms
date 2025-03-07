@@ -15,6 +15,7 @@ import (
 	"github.com/sbchaos/opms/lib/cmdutil"
 	"github.com/sbchaos/opms/lib/config"
 	"github.com/sbchaos/opms/lib/list"
+	"github.com/sbchaos/opms/lib/names"
 	"github.com/sbchaos/opms/lib/table"
 	"github.com/sbchaos/opms/lib/term"
 )
@@ -56,14 +57,10 @@ func (r *existsCommand) RunE(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	mapping := make(map[mcc.ProjectSchema][]string)
+	var tableNames []string
+	mapping := make(map[names.Schema][]string)
 	if r.name != "" {
-		ps, name, err := mcc.SplitParts(r.name)
-		if err != nil {
-			return err
-		}
-
-		mapping[ps] = []string{name}
+		tableNames = append(tableNames, r.name)
 
 		if r.fileName != "" {
 			return errors.New("--filename flag cannot be used along with name")
@@ -71,26 +68,19 @@ func (r *existsCommand) RunE(_ *cobra.Command, _ []string) error {
 	}
 
 	if r.fileName != "" {
-		content, err := cmdutil.ReadFile(r.fileName, os.Stdin)
+		lines, err := cmdutil.ReadLines(r.fileName, os.Stdin)
 		if err != nil {
 			return err
 		}
-		fields := strings.Fields(string(content))
-		for _, field := range fields {
-			ps, name, err := mcc.SplitParts(field)
-			if err != nil {
-				fmt.Printf("ignoring invalid table name %s\n", field)
-			}
-
-			mapping[ps] = append(mapping[ps], name)
-		}
+		tableNames = lines
 	}
+	mapping = names.GroupTableNames(tableNames)
 
 	printer := table.New(os.Stdout, t.IsTerminalOutput(), size)
 
 	for ps, tables := range mapping {
-		client.SetDefaultProjectName(ps.ProjectName)
-		client.SetCurrentSchemaName(ps.SchemaName)
+		client.SetDefaultProjectName(ps.ProjectID)
+		client.SetCurrentSchemaName(ps.SchemaID)
 
 		lenTables := len(tables)
 		for i := 0; i < lenTables; i = i + 100 {
@@ -109,7 +99,7 @@ func (r *existsCommand) RunE(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func forN(step int, printer table.Printer, tabs *odps.Tables, ps mcc.ProjectSchema, tables []string) error {
+func forN(step int, printer table.Printer, tabs *odps.Tables, ps names.Schema, tables []string) error {
 	lenTables := len(tables)
 	for i := 0; i < lenTables; i = i + step {
 		end := min(i+step, lenTables)
@@ -139,18 +129,18 @@ func forN(step int, printer table.Printer, tabs *odps.Tables, ps mcc.ProjectSche
 	return nil
 }
 
-func failureStatus(printer table.Printer, ps mcc.ProjectSchema, table string) {
+func failureStatus(printer table.Printer, ps names.Schema, table string) {
 	printer.AddField(" ❌ ")
-	printer.AddField(ps.Table(table))
+	printer.AddField(ps.TableName(table))
 	printer.EndRow()
 }
 
-func successStatus(printer table.Printer, ps mcc.ProjectSchema, tables []*odps.Table) {
+func successStatus(printer table.Printer, ps names.Schema, tables []*odps.Table) {
 	printer.AddHeader([]string{"Exists", "Table Name"})
 
 	for _, t1 := range tables {
 		printer.AddField(" ✅ ")
-		printer.AddField(ps.Table(t1.Name()))
+		printer.AddField(ps.TableName(t1.Name()))
 		printer.EndRow()
 	}
 }
