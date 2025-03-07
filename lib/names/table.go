@@ -22,6 +22,14 @@ func NewSchema(projectID, schemaID string) Schema {
 	}
 }
 
+func (s Schema) String() string {
+	return fmt.Sprintf("%s.%s", s.ProjectID, s.SchemaID)
+}
+
+func (t Table) String() string {
+	return fmt.Sprintf("%s.%s.%s", t.Schema.ProjectID, t.Schema.SchemaID, t.TableID)
+}
+
 func FromSchemaName(name string) (Schema, error) {
 	parts := strings.SplitN(name, ".", 2)
 	if len(parts) != 2 {
@@ -42,6 +50,13 @@ func FromTableName(name string) (Table, error) {
 func NewTable(projectID, schemaID, tableID string) Table {
 	return Table{
 		Schema:  NewSchema(projectID, schemaID),
+		TableID: tableID,
+	}
+}
+
+func TableWithSchema(schema Schema, tableID string) Table {
+	return Table{
+		Schema:  schema,
 		TableID: tableID,
 	}
 }

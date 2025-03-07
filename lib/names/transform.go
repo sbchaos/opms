@@ -1,44 +1,48 @@
 package names
 
-import (
-	"errors"
-	"strings"
-)
-
-func MapNames(projMap map[string]string, names []string) ([]string, error) {
+func MapNames(projMap map[string]string, names []string) ([]Table, error) {
+	tables := make([]Table, len(names))
 	if len(projMap) == 0 {
-		return names, nil
+		for i, name := range names {
+			t1, err := FromTableName(name)
+			if err != nil {
+				return nil, err
+			}
+			tables[i] = t1
+		}
 	}
 
-	tableNames := make([]string, len(names))
 	for i, field := range names {
 		newName, err := MapName(projMap, field)
 		if err != nil {
 			return nil, err
 		}
 
-		tableNames[i] = newName
+		tables[i] = newName
 	}
-	return tableNames, nil
+	return tables, nil
 }
 
-func MapName(projMap map[string]string, name string) (string, error) {
-	split := strings.Split(name, ".")
-	if len(split) != 3 {
-		return "", errors.New("invalid name format")
+func MapName(projMap map[string]string, name string) (Table, error) {
+	t1, err := FromTableName(name)
+	if err != nil {
+		return Table{}, err
 	}
 
-	projDataset := split[0] + "." + split[1]
-	if pd, ok := projMap[projDataset]; ok {
-		n1 := pd + "." + split[2]
-		return n1, nil
+	schm := t1.Schema.String()
+	if pd, ok := projMap[schm]; ok {
+		schema, err := FromSchemaName(pd)
+		if err != nil {
+			return Table{}, err
+		}
+		return TableWithSchema(schema, t1.TableID), nil
 	}
 
-	projName := split[0]
-	if proj, ok := projMap[split[0]]; ok {
+	projName := t1.Schema.ProjectID
+	if proj, ok := projMap[projName]; ok {
 		projName = proj
 	}
 
-	newName := projName + "." + split[1] + "." + split[2]
-	return newName, nil
+	tab := NewTable(projName, t1.Schema.SchemaID, t1.TableID)
+	return tab, nil
 }

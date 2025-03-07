@@ -1,7 +1,9 @@
 package resource
 
 type ExternalTable struct {
-	Name string
+	Name     string `mapstructure:"name"`
+	Project  string `mapstructure:"project"`
+	Database string `mapstructure:"database"`
 
 	Description string          `mapstructure:"description,omitempty"`
 	Schema      Schema          `mapstructure:"schema,omitempty"`

@@ -12,9 +12,9 @@ const (
 )
 
 type MappedExtTable struct {
-	Et       ExternalTable
-	FullName string
-	OldName  string
+	Et      *ExternalTable
+	Table   names.Table
+	OldName string
 }
 
 func MapExternalTable(spec *ExternalTable, projectMapping, typeMapping map[string]string) (*MappedExtTable, error) {
@@ -23,23 +23,25 @@ func MapExternalTable(spec *ExternalTable, projectMapping, typeMapping map[strin
 		return nil, err
 	}
 
+	oldName := spec.Name
+	tab, err := names.MapName(projectMapping, oldName)
+	if err != nil {
+		return nil, err
+	}
+
 	mcET := ExternalTable{
+		Name:        tab.TableID,
+		Database:    tab.Schema.SchemaID,
+		Project:     tab.Schema.ProjectID,
 		Description: spec.Description,
 		Schema:      schema,
 		Source:      MapExternalSourceConfig(spec.Source),
 	}
 
-	oldName := spec.Name
-	name, err := names.MapName(projectMapping, oldName)
-	if err != nil {
-		return nil, err
-	}
-	spec.Name = name
-
 	mapped := &MappedExtTable{
-		Et:       &mcET,
-		FullName: name,
-		OldName:  oldName,
+		Et:      &mcET,
+		Table:   tab,
+		OldName: oldName,
 	}
 
 	return mapped, nil

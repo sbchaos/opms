@@ -16,8 +16,11 @@ import (
 
 	"github.com/sbchaos/opms/cmd/optimus/internal/parse"
 	"github.com/sbchaos/opms/cmd/optimus/internal/resource"
+	"github.com/sbchaos/opms/external/gcp"
+	"github.com/sbchaos/opms/external/gsheet"
 	"github.com/sbchaos/opms/lib/cmdutil"
 	"github.com/sbchaos/opms/lib/config"
+	"github.com/sbchaos/opms/lib/names"
 	"github.com/sbchaos/opms/lib/table"
 	"github.com/sbchaos/opms/lib/term"
 )
@@ -47,6 +50,9 @@ type etCommand struct {
 	required     string
 	requiredList map[string]string
 
+	fixSheetRange bool
+	provider      *gcp.ClientProvider
+
 	tmpl   *template.Template
 	parser *parse.DDLParser
 }
@@ -57,7 +63,7 @@ func NewExternalTableCommand(cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "external-table",
 		Short:   "Generate external table spec from bq query/queries",
-		Example: "opms optimus generate external-table --query /path/to/file.sql",
+		Example: "opms opt generate external-table --query /path/to/file.sql",
 		PreRunE: ec.PreRunE,
 		RunE:    ec.RunE,
 	}
@@ -68,6 +74,7 @@ func NewExternalTableCommand(cfg *config.Config) *cobra.Command {
 	cmd.Flags().StringVarP(&ec.typeMapJson, "type-map", "t", "", "Mapping json of BQ to maxcompute type")
 	cmd.Flags().StringVarP(&ec.projMapJson, "proj-map", "p", "", "Mapping json of BQ to maxcompute projects")
 	cmd.Flags().StringVarP(&ec.required, "required", "r", "", "List of required tables, - for stdin")
+	cmd.Flags().BoolVarP(&ec.fixSheetRange, "fix-range", "f", false, "Try to fix sheet range")
 	cmd.MarkFlagRequired("type-map")
 	cmd.MarkFlagRequired("proj-map")
 	return cmd
@@ -83,6 +90,14 @@ func (r *etCommand) PreRunE(_ *cobra.Command, _ []string) error {
 
 	if r.fileName == "" && r.dirName == "" {
 		return fmt.Errorf("must provide either a file or a directory")
+	}
+
+	if r.fixSheetRange {
+		p1, errProvider := gcp.NewClientProvider(r.cfg)
+		if errProvider != nil {
+			return errProvider
+		}
+		r.provider = p1
 	}
 
 	r.typeMap = map[string]string{}
@@ -226,21 +241,21 @@ func (r *etCommand) processQuery(name, query string, printer table.Printer) erro
 		return err
 	}
 
-	parts := strings.Split(y1.FullName, ".")
-	proj := parts[0]
+	if r.fixSheetRange {
+		r.fixRangeIfMissing(y1)
+	}
+
+	proj := y1.Et.Project
 	projVar, ok := r.projMap[proj+"_multi"]
 	if ok {
-		proj = projVar
+		y1.Et.Project = projVar
 	}
 
 	yctx := &YamlContext{
-		Et:       y1.Et,
-		Proj:     proj,
-		Schema:   parts[1],
-		Name:     parts[2],
-		FullName: y1.FullName,
-		OldName:  y1.OldName,
-		Labels:   nil,
+		Et:      y1.Et,
+		Table:   y1.Table,
+		OldName: y1.OldName,
+		Labels:  nil,
 	}
 
 	err = r.WriteResource(yctx)
@@ -255,6 +270,31 @@ func (r *etCommand) processQuery(name, query string, printer table.Printer) erro
 	return nil
 }
 
+func (r *etCommand) fixRangeIfMissing(met *resource.MappedExtTable) {
+	sheetURI := met.Et.Source.SourceURIs[0]
+	rng := met.Et.Source.Range
+	if rng == "" || (strings.Contains(rng, ":") && !strings.Contains(rng, "!")) {
+		proj, _, found := strings.Cut(met.OldName, ".")
+		if !found {
+			return
+		}
+		service, err2 := r.provider.GetSheetsClient(proj)
+		if err2 != nil {
+			fmt.Println(err2)
+			return
+		}
+		name, err := gsheet.GetSheetName(service, sheetURI)
+		if err == nil {
+			if rng != "" {
+				name += "!" + rng
+			}
+			met.Et.Source.Range = name
+		} else {
+			fmt.Println("Error getting sheet name:", err)
+		}
+	}
+}
+
 func addFailureRow(printer table.Printer, name string, msg string) {
 	printer.AddField(Failed)
 	printer.AddField(name)
@@ -267,7 +307,7 @@ func (r *etCommand) WriteResource(ymCtx *YamlContext) error {
 	if err != nil {
 		return err
 	}
-	filePath := path.Join("generated", "maxcompute", ymCtx.FullName, "resource.yaml")
+	filePath := path.Join("generated", "maxcompute", ymCtx.Table.String(), "resource.yaml")
 	return WriteFile(filePath, content)
 }
 
@@ -308,11 +348,8 @@ func readJson(fileName string) (map[string]string, error) {
 }
 
 type YamlContext struct {
-	Et       resource.ExternalTable
-	Proj     string
-	Schema   string
-	Name     string
-	FullName string
-	OldName  string
-	Labels   map[string]string
+	Et      *resource.ExternalTable
+	Table   names.Table
+	OldName string
+	Labels  map[string]string
 }

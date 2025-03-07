@@ -1,6 +1,6 @@
 {{- /* gotype: github.com/sbchaos/opms/cmd/optimus/generate/external_table.YamlContext */ -}}
 version: 2
-name: {{.FullName }}
+name: {{ .Table.String }}
 type: external_table
 {{- if .Labels }}
 labels:
@@ -12,9 +12,9 @@ spec:
   {{- if .Et.Description }}
   description: {{.Et.Description}}
   {{- end }}
-  project: {{.Proj}}
-  database: {{.Schema}}
-  name: {{.Name}}
+  project: "{{ .Et.Project }}"
+  database: {{ .Et.Database }}
+  name: {{ .Et.Name }}
   schema:
    {{- range $i, $value := $.Et.Schema }}
    - name: {{ $value.Name }}

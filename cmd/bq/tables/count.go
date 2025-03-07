@@ -61,13 +61,17 @@ func (r *countCommand) RunE(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	var tableNames []string
+	var tableNames []names.Table
 	if r.name == "" && r.fileName == "" {
 		return errors.New("either --name or --filename is required")
 	}
 
 	if r.name != "" {
-		tableNames = []string{r.name}
+		tab, err := names.FromTableName(r.name)
+		if err != nil {
+			return err
+		}
+		tableNames = append(tableNames, tab)
 	}
 
 	projectMapping := map[string]string{}
@@ -105,7 +109,7 @@ func (r *countCommand) RunE(_ *cobra.Command, _ []string) error {
 		tasks[i] = func() pool.JobResult[string] {
 			err = r.queryTable(ctx, provider, t1, printer)
 			return pool.JobResult[string]{
-				Output: t1,
+				Output: t1.String(),
 				Err:    err,
 			}
 		}
@@ -130,24 +134,19 @@ func (r *countCommand) RunE(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func (r *countCommand) queryTable(ctx context.Context, provider *gcp.ClientProvider, tableName string, printer table.Printer) error {
-	tb, err := names.FromTableName(tableName)
+func (r *countCommand) queryTable(ctx context.Context, provider *gcp.ClientProvider, tab names.Table, printer table.Printer) error {
+	client, err := provider.GetClient(tab.Schema.ProjectID, driveScope)
 	if err != nil {
 		return err
 	}
 
-	client, err := provider.GetClient(tb.Schema.ProjectID, driveScope)
-	if err != nil {
-		return err
-	}
-
-	qr := `SELECT COUNT(*) FROM ` + tableName
+	qr := `SELECT COUNT(*) FROM ` + tab.String()
 	q := client.Query(qr)
 
 	it, err := q.Read(ctx)
 	if err != nil {
 		r.mu.Lock()
-		printer.AddField(tableName)
+		printer.AddField(tab.String())
 		addFailure(printer, "permission issue")
 		r.mu.Unlock()
 		return fmt.Errorf("error while reading from bq: %w", err)
@@ -160,7 +159,7 @@ func (r *countCommand) queryTable(ctx context.Context, provider *gcp.ClientProvi
 		}
 		if err != nil {
 			r.mu.Lock()
-			printer.AddField(tableName)
+			printer.AddField(tab.String())
 			addFailure(printer, "failure in query")
 			r.mu.Unlock()
 			return err
@@ -168,13 +167,13 @@ func (r *countCommand) queryTable(ctx context.Context, provider *gcp.ClientProvi
 
 		if len(row) != 1 {
 			r.mu.Lock()
-			printer.AddField(tableName)
+			printer.AddField(tab.String())
 			addFailure(printer, "too many rows")
 			r.mu.Unlock()
 		}
 
 		r.mu.Lock()
-		printer.AddField(tableName)
+		printer.AddField(tab.String())
 		printer.AddField(fmt.Sprintf("%v", row[0]))
 		printer.AddField("")
 		printer.EndRow()

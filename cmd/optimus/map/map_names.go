@@ -64,13 +64,13 @@ func (r *mapNameCommand) RunE(_ *cobra.Command, _ []string) error {
 		tableNames = lines
 	}
 
-	mappedNames, err := names.MapNames(projectMapping, tableNames)
+	tables, err := names.MapNames(projectMapping, tableNames)
 	if err != nil {
 		return err
 	}
 
-	for _, n := range mappedNames {
-		fmt.Println(n)
+	for _, n := range tables {
+		fmt.Println(n.String())
 	}
 	return nil
 }
