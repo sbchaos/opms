@@ -20,9 +20,13 @@ import (
 )
 
 type fetchDDL struct {
-	cfg      *config.Config
-	name     string
-	fileName string
+	cfg       *config.Config
+	name      string
+	fileName  string
+	outputDir string
+
+	provider *gcp.ClientProvider
+	printer  table.Printer
 }
 
 func NewFetchDDLCommand(cfg *config.Config) *cobra.Command {
@@ -37,7 +41,7 @@ func NewFetchDDLCommand(cfg *config.Config) *cobra.Command {
 
 	cmd.Flags().StringVarP(&fetch.name, "name", "n", "", "Table name")
 	cmd.Flags().StringVarP(&fetch.fileName, "filename", "f", "", "Filename with list of tables, - for stdin")
-
+	cmd.Flags().StringVarP(&fetch.outputDir, "output-dir", "o", "", "Output directory")
 	return cmd
 }
 
@@ -46,6 +50,7 @@ func (m *fetchDDL) RunE(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+	m.provider = client
 
 	var tableNames []string
 	if m.name == "" && m.fileName == "" {
@@ -71,11 +76,13 @@ func (m *fetchDDL) RunE(_ *cobra.Command, _ []string) error {
 	defer cancelFunc()
 
 	printer := table.New(os.Stdout, t.IsTerminalOutput(), size)
+	m.printer = printer
+
 	printer.AddHeader([]string{"Table", "Status", "Error"})
 
 	errs := make([]error, 0)
 	for _, t1 := range tableNames {
-		err = queryDDL(ctx, client, t1, printer)
+		err = m.queryDDL(ctx, t1)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -91,24 +98,24 @@ func (m *fetchDDL) RunE(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func queryDDL(ctx context.Context, provider *gcp.ClientProvider, tableName string, printer table.Printer) error {
+func (m *fetchDDL) queryDDL(ctx context.Context, tableName string) error {
 	tb, err := names.FromTableName(tableName)
 	if err != nil {
 		return err
 	}
 
-	client, err := provider.GetClient(tb.Schema.ProjectID, driveScope)
+	client, err := m.provider.GetClient(tb.Schema.ProjectID, driveScope)
 	if err != nil {
 		return err
 	}
 
 	query := fmt.Sprintf("select table_name, ddl from `%s.%s`.INFORMATION_SCHEMA.TABLES where table_name = '%s';", tb.Schema.ProjectID, tb.Schema.SchemaID, tb.TableID)
 	q := client.Query(query)
-	printer.AddField(tableName)
+	m.printer.AddField(tableName)
 
 	it, err := q.Read(ctx)
 	if err != nil {
-		fetchFailure(printer, "permission issue")
+		fetchFailure(m.printer, "permission issue")
 		return fmt.Errorf("error while reading from bq: %w", err)
 	}
 	for {
@@ -118,28 +125,32 @@ func queryDDL(ctx context.Context, provider *gcp.ClientProvider, tableName strin
 			break
 		}
 		if err != nil {
-			fetchFailure(printer, "failure in query")
+			fetchFailure(m.printer, "failure in query")
 			return err
 		}
 
 		if len(row) != 2 {
-			fetchFailure(printer, "too many rows")
+			fetchFailure(m.printer, "too many rows")
 		}
 		content, ok := row[1].(string)
 		if !ok {
-			fetchFailure(printer, "unable to parse dll")
+			fetchFailure(m.printer, "unable to parse dll")
 			return nil
 		}
 
-		toWritePath := path.Join(tb.Schema.ProjectID, tableName+".sql")
+		toWritePath := tableName + ".sql"
+		if m.outputDir != "" {
+			toWritePath = path.Join(m.outputDir, toWritePath)
+		}
+
 		err = cmdutil.WriteFileAndDir(toWritePath, []byte(content))
 		if err != nil {
-			fetchFailure(printer, "failure in write file")
+			fetchFailure(m.printer, "failure in write file")
 			return err
 		}
 
-		printer.AddField("success")
-		printer.EndRow()
+		m.printer.AddField("success")
+		m.printer.EndRow()
 	}
 	return nil
 }
