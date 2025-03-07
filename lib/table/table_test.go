@@ -1,4 +1,4 @@
-package table
+package table_test
 
 import (
 	"bytes"
@@ -7,9 +7,11 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/sbchaos/opms/lib/table"
 )
 
-func ExampleTablePrinter() {
+func E1TablePrinter() {
 	// information about the terminal can be obtained using the [pkg/term] package
 	isTTY := true
 	termWidth := 14
@@ -17,12 +19,12 @@ func ExampleTablePrinter() {
 		return "\x1b[31m" + s + "\x1b[m"
 	}
 
-	t := New(os.Stdout, isTTY, termWidth)
-	t.AddField("9", WithTruncate(nil))
+	t := table.New(os.Stdout, isTTY, termWidth)
+	t.AddField("9", table.WithTruncate(nil))
 	t.AddField("hello")
 	t.EndRow()
-	t.AddField("10", WithTruncate(nil))
-	t.AddField("long description", WithColor(red))
+	t.AddField("10", table.WithTruncate(nil))
+	t.AddField("long description", table.WithColor(red))
 	t.EndRow()
 	if err := t.Render(); err != nil {
 		log.Fatal(err)
@@ -34,7 +36,7 @@ func ExampleTablePrinter() {
 
 func Test_ttyTablePrinter_autoTruncate(t *testing.T) {
 	buf := bytes.Buffer{}
-	tp := New(&buf, true, 5)
+	tp := table.New(&buf, true, 5)
 
 	tp.AddField("1")
 	tp.AddField("hello")
@@ -56,12 +58,12 @@ func Test_ttyTablePrinter_autoTruncate(t *testing.T) {
 
 func Test_ttyTablePrinter_WithTruncate(t *testing.T) {
 	buf := bytes.Buffer{}
-	tp := New(&buf, true, 15)
+	tp := table.New(&buf, true, 15)
 
-	tp.AddField("long SHA", WithTruncate(nil))
+	tp.AddField("long SHA", table.WithTruncate(nil))
 	tp.AddField("hello")
 	tp.EndRow()
-	tp.AddField("another SHA", WithTruncate(nil))
+	tp.AddField("another SHA", table.WithTruncate(nil))
 	tp.AddField("world")
 	tp.EndRow()
 
@@ -78,9 +80,9 @@ func Test_ttyTablePrinter_WithTruncate(t *testing.T) {
 
 func Test_ttyTablePrinter_AddHeader(t *testing.T) {
 	buf := bytes.Buffer{}
-	tp := New(&buf, true, 80)
+	tp := table.New(&buf, true, 80)
 
-	tp.AddHeader([]string{"ONE", "TWO", "THREE"}, WithColor(func(s string) string {
+	tp.AddHeader([]string{"ONE", "TWO", "THREE"}, table.WithColor(func(s string) string {
 		return fmt.Sprintf("\x1b[4m%s\x1b[m", s)
 	}))
 	// Subsequent calls to AddHeader are ignored.
@@ -107,10 +109,10 @@ func Test_ttyTablePrinter_AddHeader(t *testing.T) {
 
 func Test_ttyTablePrinter_WithPadding(t *testing.T) {
 	buf := bytes.Buffer{}
-	tp := New(&buf, true, 80)
+	tp := table.New(&buf, true, 80)
 
 	// Center the headers.
-	tp.AddHeader([]string{"A", "B", "C"}, WithPadding(func(width int, s string) string {
+	tp.AddHeader([]string{"A", "B", "C"}, table.WithPadding(func(width int, s string) string {
 		left := (width - len(s)) / 2
 		return strings.Repeat(" ", left) + s + strings.Repeat(" ", width-left-len(s))
 	}))
@@ -136,7 +138,7 @@ func Test_ttyTablePrinter_WithPadding(t *testing.T) {
 
 func Test_tsvTablePrinter(t *testing.T) {
 	buf := bytes.Buffer{}
-	tp := New(&buf, false, 0)
+	tp := table.New(&buf, false, 0)
 
 	tp.AddField("1")
 	tp.AddField("hello")
@@ -158,7 +160,7 @@ func Test_tsvTablePrinter(t *testing.T) {
 
 func Test_tsvTablePrinter_AddHeader(t *testing.T) {
 	buf := bytes.Buffer{}
-	tp := New(&buf, false, 0)
+	tp := table.New(&buf, false, 0)
 
 	// Headers are not output in TSV output.
 	tp.AddHeader([]string{"ONE", "TWO", "THREE"})

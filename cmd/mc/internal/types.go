@@ -42,22 +42,22 @@ func ToString(r any) string {
 		return fmt.Sprintf("%v", r.Bool)
 
 	case *sqldriver.Binary:
-		return fmt.Sprintf("%s", r.String())
+		return r.String()
 
 	case *data.Decimal:
-		return fmt.Sprintf("%s", r.String())
+		return r.String()
 
 	case *data.Map:
-		return fmt.Sprintf("%s", r.String())
+		return r.String()
 
 	case *data.Array:
-		return fmt.Sprintf("%s", r.String())
+		return r.String()
 
 	case *data.Struct:
-		return fmt.Sprintf("%s", r.String())
+		return r.String()
 
 	case *data.Json:
-		return fmt.Sprintf("%s", r.String())
+		return r.String()
 
 	default:
 		s, ok1 := r.(string)

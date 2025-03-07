@@ -16,7 +16,6 @@ import (
 )
 
 var (
-	deadlineErr = "context deadline exceeded"
 	queryFields = `SELECT * FROM `
 )
 

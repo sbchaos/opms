@@ -21,8 +21,7 @@ import (
 type readCommand struct {
 	cfg *config.Config
 
-	name     string
-	fileName string
+	name string
 }
 
 // NewReadCommand initializes command to read number of rows in table
@@ -60,7 +59,7 @@ func (r *readCommand) RunE(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	err = printer.Render()
+	printer.Render()
 	return nil
 }
 

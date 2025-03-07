@@ -213,7 +213,7 @@ func (r *etCommand) processDirectory(printer table.Printer) []error {
 			errs = append(errs, err)
 		}
 	}
-	return nil
+	return errs
 }
 
 func (r *etCommand) processQuery(name, query string, printer table.Printer) error {

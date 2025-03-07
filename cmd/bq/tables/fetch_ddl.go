@@ -88,7 +88,7 @@ func (m *fetchDDL) RunE(_ *cobra.Command, _ []string) error {
 		}
 	}
 
-	err = printer.Render()
+	printer.Render()
 	if len(errs) != 0 {
 		fmt.Println("Errors:")
 		for _, err := range errs {

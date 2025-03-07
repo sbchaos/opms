@@ -89,7 +89,7 @@ func (r *readCommand) RunE(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	err = printer.Render()
+	printer.Render()
 	return nil
 }
 

@@ -58,7 +58,7 @@ func (r *existsCommand) RunE(_ *cobra.Command, _ []string) error {
 	}
 
 	var tableNames []string
-	mapping := make(map[names.Schema][]string)
+	var mapping map[names.Schema][]string
 	if r.name != "" {
 		tableNames = append(tableNames, r.name)
 
