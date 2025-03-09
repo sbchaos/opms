@@ -48,7 +48,6 @@ func NewReadCSVCommand(cfg *config.Config) *cobra.Command {
 	cmd.Flags().StringVarP(&read.tableName, "table", "t", "", "Table name")
 	cmd.Flags().StringVarP(&read.bucket, "bucket", "b", "", "Bucket name")
 	cmd.Flags().StringVarP(&read.output, "output", "o", "", "Write CSV before printing")
-	cmd.MarkFlagRequired("bucket")
 	return cmd
 }
 
@@ -81,6 +80,13 @@ func (r *readCommand) RunE(_ *cobra.Command, _ []string) error {
 		} else {
 			parts := strings.Split(r.tableName, ".")
 			name = fmt.Sprintf("external-table/%s/%s/%s/file.csv", parts[0], parts[1], parts[2])
+			if r.bucket == "" {
+				fromVar, err := cmdutil.GetArgFromVar[string](r.cfg, "csv", parts[0], "bucket")
+				if err != nil {
+					return errors.New("bucket name is required, not found in vars")
+				}
+				r.bucket = fromVar
+			}
 		}
 	}
 
