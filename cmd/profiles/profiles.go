@@ -3,6 +3,7 @@ package profiles
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/sbchaos/opms/cmd/profiles/vars"
 	"github.com/sbchaos/opms/lib/config"
 )
 
@@ -19,6 +20,7 @@ func NewProfilesCommand(cfg *config.Config) *cobra.Command {
 		NewUseProfileCommand(cfg),
 		NewDeleteProfileCommand(cfg),
 		NewEditProfileCommand(cfg),
+		vars.NewVarsCommand(cfg),
 	)
 	return cmd
 }

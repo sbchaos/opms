@@ -23,6 +23,15 @@ const (
 	connTimeout = 5 * time.Second
 )
 
+//scopes := []string{
+//	"https://www.googleapis.com/auth/drive",
+//	"https://www.googleapis.com/auth/drive.file",
+//	"https://www.googleapis.com/auth/drive.readonly",
+//	"https://www.googleapis.com/auth/spreadsheets",
+//	"https://www.googleapis.com/auth/spreadsheets.readonly",
+//	bigquery.Scope,
+//}
+
 type ClientProvider struct {
 	bq         *bigquery.Client
 	drive      *drive.Service
@@ -44,7 +53,7 @@ func NewClientProvider(cfg *config.Config) (*ClientProvider, error) {
 		return &ClientProvider{
 			staticCred: acc,
 			static:     true,
-			profile:    &profile,
+			profile:    profile,
 		}, nil
 	}
 
@@ -63,7 +72,7 @@ func NewClientProvider(cfg *config.Config) (*ClientProvider, error) {
 			return &ClientProvider{
 				staticCred: acc,
 				static:     true,
-				profile:    &profile,
+				profile:    profile,
 			}, nil
 		} else {
 			return nil, errors.New("empty value for account")
@@ -72,7 +81,7 @@ func NewClientProvider(cfg *config.Config) (*ClientProvider, error) {
 
 	return &ClientProvider{
 		static:    false,
-		profile:   &profile,
+		profile:   profile,
 		clientMap: make(map[string]*bigquery.Client),
 		driveMap:  make(map[string]*drive.Service),
 		sheetMap:  make(map[string]*sheets.Service),
