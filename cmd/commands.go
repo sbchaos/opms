@@ -4,6 +4,7 @@ import (
 	cli "github.com/spf13/cobra"
 
 	"github.com/sbchaos/opms/cmd/bq"
+	"github.com/sbchaos/opms/cmd/drive"
 	"github.com/sbchaos/opms/cmd/mc"
 	"github.com/sbchaos/opms/cmd/optimus"
 	"github.com/sbchaos/opms/cmd/oss"
@@ -35,6 +36,7 @@ func New(cfg *config.Config) *cli.Command {
 		optimus.NewOptimusCommand(cfg),
 		bq.NewBigQueryCommand(cfg),
 		oss.NewOSSCommand(cfg),
+		drive.NewDriveCommand(cfg),
 	)
 
 	return cmd
