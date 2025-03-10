@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	"strings"
 
 	"google.golang.org/api/drive/v3"
 
@@ -22,7 +21,7 @@ func ListFiles(d *drive.Service, folderID string) ([]*drive.File, error) {
 			List().
 			IncludeItemsFromAllDrives(true).
 			SupportsAllDrives(true).
-			Fields("nextPageToken, files(id, name, mimeType)").
+			Fields("nextPageToken, files(id, name, mimeType, fileExtension)").
 			Q(q)
 
 		// If we have a pageToken set, apply it to the query
@@ -62,20 +61,21 @@ func DownloadFile(d *drive.Service, file *drive.File, filepath string) error {
 	return cmdutil.WriteFileAndDir(filepath, contents)
 }
 
-func DownloadFolder(d *drive.Service, folderID string, dirPath string, jobs chan pool.Job[string]) error {
+func DownloadFolder(d *drive.Service, folderID string, dirPath string, jobs chan pool.Job[string], allowedExt map[string]struct{}) error {
 	children, err := ListFiles(d, folderID)
 	if err != nil {
 		return err
 	}
 
-	for _, child := range children {
-		if strings.HasPrefix(child.Name, ".") {
-			continue
-		}
+	checkExt := false
+	if len(allowedExt) > 0 {
+		checkExt = true
+	}
 
+	for _, child := range children {
 		newPath := filepath.Join(dirPath, child.Name)
 		if child.MimeType == "application/vnd.google-apps.folder" {
-			err = DownloadFolder(d, child.Id, newPath, jobs)
+			err = DownloadFolder(d, child.Id, newPath, jobs, allowedExt)
 			if err != nil {
 				fmt.Printf("An error occurred: %v\n", err)
 			}
@@ -83,13 +83,15 @@ func DownloadFolder(d *drive.Service, folderID string, dirPath string, jobs chan
 			continue
 		}
 
-		jobs <- func() pool.JobResult[string] {
-			f1 := child
-			n1 := newPath
-			err = DownloadFile(d, f1, n1)
-			return pool.JobResult[string]{
-				Output: f1.Name,
-				Err:    err,
+		if _, ok := allowedExt[child.FileExtension]; !checkExt || ok {
+			jobs <- func() pool.JobResult[string] {
+				f1 := child
+				n1 := newPath
+				err = DownloadFile(d, f1, n1)
+				return pool.JobResult[string]{
+					Output: f1.Name,
+					Err:    err,
+				}
 			}
 		}
 	}

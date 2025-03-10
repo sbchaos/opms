@@ -123,7 +123,8 @@ func TestMapHelper(t *testing.T) {
 				"time": 10,
 			})
 
-			result := util.ConfigAs[float64](input.AsMap(), "time")
+			result, found := util.ConfigAs[float64](input.AsMap(), "time")
+			assert.True(t, found)
 			assert.Equal(t, result, float64(10))
 		})
 	})

@@ -54,14 +54,14 @@ func Contains[K comparable, V any](mp map[K]V, keys ...K) bool {
 	return true
 }
 
-func ConfigAs[T any](mapping map[string]any, key string) T {
+func ConfigAs[T any](mapping map[string]any, key string) (T, bool) {
 	var zero T
 	val, ok := mapping[key]
 	if ok {
 		s, ok := val.(T)
 		if ok {
-			return s
+			return s, true
 		}
 	}
-	return zero
+	return zero, false
 }

@@ -74,20 +74,23 @@ func (r *readCommand) RunE(_ *cobra.Command, _ []string) error {
 		name = r.name
 	}
 
+	proj := ""
 	if r.tableName != "" {
 		if name != "" {
 			fmt.Println("ignoring the table name, name provided as well")
 		} else {
 			parts := strings.Split(r.tableName, ".")
 			name = fmt.Sprintf("external-table/%s/%s/%s/file.csv", parts[0], parts[1], parts[2])
-			if r.bucket == "" {
-				fromVar, err := cmdutil.GetArgFromVar[string](r.cfg, "csv", parts[0], "bucket")
-				if err != nil {
-					return errors.New("bucket name is required, not found in vars")
-				}
-				r.bucket = fromVar
-			}
+			proj = parts[0]
 		}
+	}
+
+	if r.bucket == "" {
+		fromVar, err := cmdutil.GetArgFromVar[string](r.cfg, "csv", proj, "bucket")
+		if err != nil {
+			return errors.New("bucket name is required, not found in vars")
+		}
+		r.bucket = fromVar
 	}
 
 	err = r.readFileFromBucket(ctx, client, name, printer)

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -56,6 +57,15 @@ func (r *downloadCommand) RunE(_ *cobra.Command, _ []string) error {
 		return errors.New("--folder-id is required")
 	}
 
+	allowedExt := make(map[string]struct{})
+	if r.fileExt != "" {
+		parts := strings.Split(r.fileExt, ",")
+		for _, part := range parts {
+			key := strings.TrimSpace(part)
+			allowedExt[key] = struct{}{}
+		}
+	}
+
 	service, err := pr.GetDriveClient(r.proj)
 	if err != nil {
 		return err
@@ -65,7 +75,7 @@ func (r *downloadCommand) RunE(_ *cobra.Command, _ []string) error {
 	outChan := pool.StartPool(r.workers, jobs)
 
 	go func() {
-		err = drive.DownloadFolder(service, r.folderID, r.output, jobs)
+		err = drive.DownloadFolder(service, r.folderID, r.output, jobs, allowedExt)
 		if err != nil {
 			fmt.Println("Error:", err)
 		}
