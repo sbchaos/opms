@@ -130,7 +130,7 @@ func (r *readCommand) readFileFromBucket(ctx context.Context, client *oss.Client
 	printer.AddHeader(append([]string{"row num"}, csvStr[0]...))
 
 	for i, row := range csvStr[1:] {
-		printer.AddField(strconv.Itoa(i))
+		printer.AddField(strconv.Itoa(i + 1))
 		for _, col := range row {
 			printer.AddField(col)
 		}
