@@ -5,6 +5,7 @@ import (
 
 	"github.com/sbchaos/opms/cmd/bq"
 	"github.com/sbchaos/opms/cmd/drive"
+	"github.com/sbchaos/opms/cmd/gsheet"
 	"github.com/sbchaos/opms/cmd/mc"
 	"github.com/sbchaos/opms/cmd/optimus"
 	"github.com/sbchaos/opms/cmd/oss"
@@ -37,6 +38,7 @@ func New(cfg *config.Config) *cli.Command {
 		bq.NewBigQueryCommand(cfg),
 		oss.NewOSSCommand(cfg),
 		drive.NewDriveCommand(cfg),
+		gsheet.NewGsheetsCommand(cfg),
 	)
 
 	return cmd
