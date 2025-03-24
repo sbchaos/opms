@@ -57,13 +57,21 @@ func (r *downloadCommand) RunE(_ *cobra.Command, _ []string) error {
 		return errors.New("--folder-id is required")
 	}
 
+	root := drive.Folder{
+		ID:       r.folderID,
+		Path:     r.output,
+		CheckExt: false,
+	}
+
 	allowedExt := make(map[string]struct{})
 	if r.fileExt != "" {
-		parts := strings.Split(r.fileExt, ",")
-		for _, part := range parts {
+		root.CheckExt = true
+		parts := strings.SplitSeq(r.fileExt, ",")
+		for part := range parts {
 			key := strings.TrimSpace(part)
 			allowedExt[key] = struct{}{}
 		}
+		root.AllowedExt = allowedExt
 	}
 
 	service, err := pr.GetDriveClient(r.proj)
@@ -75,7 +83,7 @@ func (r *downloadCommand) RunE(_ *cobra.Command, _ []string) error {
 	outChan := pool.StartPool(r.workers, jobs)
 
 	go func() {
-		err = drive.DownloadFolder(service, r.folderID, r.output, jobs, allowedExt)
+		err = root.Download(service, jobs)
 		if err != nil {
 			fmt.Println("Error:", err)
 		}
