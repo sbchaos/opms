@@ -79,6 +79,7 @@ func (f Folder) Download(d *drive.Service, jobs chan pool.Job[string]) error {
 
 	for _, child := range children {
 		if child.IsFolder() {
+			os.MkdirAll(child.Path, fs.ModePerm)
 			fold := child.ToFolder(f.CheckExt, f.AllowedExt, nil)
 			err = fold.Download(d, jobs)
 			if err != nil {
@@ -116,9 +117,7 @@ func (f Folder) Sync(d *drive.Service, jobs chan pool.Job[string]) error {
 	}
 
 	for _, child := range children {
-		if _, ok := localFileMap[child.Path]; ok {
-			delete(localFileMap, child.Path)
-		}
+		delete(localFileMap, child.Path)
 
 		if child.IsFolder() {
 			os.MkdirAll(child.Path, fs.ModePerm)
@@ -153,7 +152,7 @@ func (f Folder) Sync(d *drive.Service, jobs chan pool.Job[string]) error {
 		}
 	}
 
-	for name, _ := range localFileMap {
+	for name := range localFileMap {
 		fmt.Printf("Removing %s\n", name)
 		os.RemoveAll(name)
 		delete(f.ChecksumMap, name)

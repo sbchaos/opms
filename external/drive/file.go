@@ -14,11 +14,7 @@ type File struct {
 }
 
 func (f File) IsFolder() bool {
-	if f.DriveFile.MimeType == "application/vnd.google-apps.folder" {
-		return true
-	}
-
-	return false
+	return f.DriveFile.MimeType == "application/vnd.google-apps.folder"
 }
 
 func (f File) ToFolder(check bool, allowed map[string]struct{}, checksum map[string]string) Folder {
