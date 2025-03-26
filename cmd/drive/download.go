@@ -25,6 +25,8 @@ type downloadCommand struct {
 	output  string
 	proj    string
 	workers int
+
+	verbose bool
 }
 
 func NewDownloadCommand(cfg *config.Config) *cobra.Command {
@@ -42,6 +44,7 @@ func NewDownloadCommand(cfg *config.Config) *cobra.Command {
 	cmd.Flags().StringVarP(&download.fileExt, "file-ext", "e", "", "File extensions, comma separated")
 	cmd.Flags().StringVarP(&download.output, "output", "o", "", "Output folder")
 	cmd.Flags().IntVarP(&download.workers, "workers", "w", 1, "Number of parallel workers")
+	cmd.Flags().BoolVarP(&download.verbose, "verbose", "v", false, "Show status")
 
 	return cmd
 }
@@ -61,6 +64,7 @@ func (r *downloadCommand) RunE(_ *cobra.Command, _ []string) error {
 		ID:       r.folderID,
 		Path:     r.output,
 		CheckExt: false,
+		Verbose:  r.verbose,
 	}
 
 	allowedExt := make(map[string]struct{})

@@ -20,6 +20,8 @@ type Folder struct {
 	AllowedExt map[string]struct{}
 
 	ChecksumMap map[string]string
+
+	Verbose bool
 }
 
 func (f Folder) CanDownload(ext string) bool {
@@ -68,10 +70,17 @@ func (f Folder) List(d *drive.Service) ([]File, error) {
 		}
 	}
 
+	if f.Verbose {
+		fmt.Printf("Found %d files", len(children))
+	}
+
 	return children, nil
 }
 
 func (f Folder) Download(d *drive.Service, jobs chan pool.Job[string]) error {
+	if f.Verbose {
+		fmt.Printf("Processing files for %s\n", f.Path)
+	}
 	children, err := f.List(d)
 	if err != nil {
 		return err
@@ -91,6 +100,9 @@ func (f Folder) Download(d *drive.Service, jobs chan pool.Job[string]) error {
 
 		if f.CanDownload(child.Extension()) {
 			jobs <- func() pool.JobResult[string] {
+				if f.Verbose {
+					fmt.Printf("Downloading file %s\n", child.Name())
+				}
 				err = child.Download(d)
 				return pool.JobResult[string]{
 					Output: child.Name(),
