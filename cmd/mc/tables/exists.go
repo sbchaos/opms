@@ -78,6 +78,7 @@ func (r *existsCommand) RunE(_ *cobra.Command, _ []string) error {
 
 	printer := table.New(os.Stdout, t.IsTerminalOutput(), size)
 
+	var errs []error
 	for ps, tables := range mapping {
 		client.SetDefaultProjectName(ps.ProjectID)
 		client.SetCurrentSchemaName(ps.SchemaID)
@@ -87,14 +88,14 @@ func (r *existsCommand) RunE(_ *cobra.Command, _ []string) error {
 			end := min(i+100, lenTables)
 			err := forN(100, printer, client.Tables(), ps, tables[i:end])
 			if err != nil {
-				return err
+				errs = append(errs, err)
 			}
 		}
 	}
 
-	err = printer.Render()
-	if err != nil {
-		return fmt.Errorf("failed to print table: %w", err)
+	printer.Render()
+	for _, er := range errs {
+		fmt.Printf("Error: %s\n", er)
 	}
 	return nil
 }
@@ -114,9 +115,12 @@ func forN(step int, printer table.Printer, tabs *odps.Tables, ps names.Schema, t
 				}
 
 				submatch := notExistErrorRegex.FindStringSubmatch(err.Error())
-				if len(submatch[0]) > 0 {
+				if len(submatch) > 0 && len(submatch[0]) > 0 {
 					failureStatus(printer, ps, submatch[1])
 					batch = list.Remove(batch, submatch[1])
+					if len(batch) == 0 {
+						break
+					}
 					continue
 				}
 				return err
