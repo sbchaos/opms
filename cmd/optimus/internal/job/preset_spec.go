@@ -1,4 +1,4 @@
-package model
+package job
 
 type Preset struct {
 	Description string            `yaml:"description"`

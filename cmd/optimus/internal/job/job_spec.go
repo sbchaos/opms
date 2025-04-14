@@ -1,4 +1,4 @@
-package model
+package job
 
 import (
 	"time"
@@ -9,21 +9,21 @@ const NewWindowVersion = 3
 type YamlSpec struct {
 	Version      int                 `yaml:"version,omitempty"`
 	Name         string              `yaml:"name"`
-	Owner        string              `yaml:"owner"`
+	Owner        string              `yaml:"owner,omitempty"`
 	Description  string              `yaml:"description,omitempty"`
-	Schedule     JobSpecSchedule     `yaml:"schedule"`
-	Behavior     JobSpecBehavior     `yaml:"behavior"`
-	Task         JobSpecTask         `yaml:"task"`
+	Schedule     JobSpecSchedule     `yaml:"schedule,omitempty"`
+	Behavior     JobSpecBehavior     `yaml:"behavior,omitempty"`
+	Task         JobSpecTask         `yaml:"task,omitempty"`
 	Asset        map[string]string   `yaml:"-"`
 	Labels       map[string]string   `yaml:"labels,omitempty"`
-	Hooks        []JobSpecHook       `yaml:"hooks"`
-	Dependencies []JobSpecDependency `yaml:"dependencies"`
+	Hooks        []JobSpecHook       `yaml:"hooks,omitempty"`
+	Dependencies []JobSpecDependency `yaml:"dependencies,omitempty"`
 	Metadata     *JobSpecMetadata    `yaml:"metadata,omitempty"`
 	Path         string              `yaml:"-"`
 }
 
 type JobSpecSchedule struct {
-	StartDate string `yaml:"start_date"`
+	StartDate string `yaml:"start_date,omitempty"`
 	EndDate   string `yaml:"end_date,omitempty"`
 	Interval  string `yaml:"interval"`
 }
@@ -43,11 +43,11 @@ type JobSpecBehaviorRetry struct {
 }
 
 type JobSpecBehaviorNotifier struct {
-	On       string            `yaml:"on"`
-	Config   map[string]string `yaml:"config"`
-	Channels []string          `yaml:"channels"`
-	Severity string            `yaml:"severity"`
-	Team     string            `yaml:"team"`
+	On       string            `yaml:"on,omitempty"`
+	Config   map[string]string `yaml:"config,omitempty"`
+	Channels []string          `yaml:"channels,omitempty"`
+	Severity string            `yaml:"severity,omitempty"`
+	Team     string            `yaml:"team,omitempty"`
 }
 
 type WebhookEndpoint struct {
@@ -110,6 +110,6 @@ type JobSpecMetadataResourceConfig struct {
 }
 
 type JobSpecMetadataAirflow struct {
-	Pool  string `yaml:"pool" json:"pool"`
-	Queue string `yaml:"queue" json:"queue"`
+	Pool  string `yaml:"pool" json:"pool,omitempty"`
+	Queue string `yaml:"queue" json:"queue,omitempty"`
 }

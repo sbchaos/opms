@@ -33,15 +33,11 @@ func NewDuplicatesCommand(cfg *config.Config) *cobra.Command {
 		RunE:    duplicates.RunE,
 	}
 
-	cmd.Flags().StringVarP(&duplicates.dir, "folder-path", "d", "", "dir path")
+	cmd.Flags().StringVarP(&duplicates.dir, "folder-path", "d", ".", "dir path")
 	return cmd
 }
 
 func (r *duplicatesCommand) RunE(_ *cobra.Command, _ []string) error {
-	if r.dir == "" {
-		r.dir = "."
-	}
-
 	jobNameMapping := map[string][]string{}
 	resourceNameMapping := map[string][]string{}
 
@@ -64,7 +60,7 @@ func (r *duplicatesCommand) RunE(_ *cobra.Command, _ []string) error {
 			return nil
 		}
 
-		spec, err := readSpec(path)
+		spec, err := readSpec[Spec](path)
 		if err != nil {
 			fmt.Printf("Unable to read spec for %s: %s", path, err)
 		}
@@ -108,16 +104,17 @@ func (r *duplicatesCommand) RunE(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func readSpec(filePath string) (Spec, error) {
+func readSpec[T any](filePath string) (T, error) {
+	var spec T
 	fileSpec, err := os.Open(filePath)
 	if err != nil {
-		return Spec{}, fmt.Errorf("error opening spec under [%s]: %w", filePath, err)
+		return spec, fmt.Errorf("error opening spec under [%s]: %w", filePath, err)
 	}
 	defer fileSpec.Close()
 
-	var spec Spec
 	if err = yaml.NewDecoder(fileSpec).Decode(&spec); err != nil {
-		return Spec{}, fmt.Errorf("error decoding spec under [%s]: %w", filePath, err)
+		return spec, fmt.Errorf("error decoding spec under [%s]: %w", filePath, err)
 	}
+
 	return spec, nil
 }
