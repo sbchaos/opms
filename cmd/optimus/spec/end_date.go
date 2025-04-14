@@ -36,7 +36,7 @@ func NewEndDateCommand(cfg *config.Config) *cobra.Command {
 		RunE:    endDate.RunE,
 	}
 
-	cmd.Flags().StringVarP(&endDate.dir, "folder-path", "d", ".", "dir path")
+	cmd.Flags().StringVarP(&endDate.dir, "folder-path", "f", ".", "dir path")
 	cmd.Flags().StringVarP(&endDate.jobNames, "job-names", "j", "", "Jobs to target")
 	cmd.Flags().StringVarP(&endDate.taskNames, "task-names", "t", "", "Comma separated task names")
 	cmd.Flags().StringVarP(&endDate.endDate, "end-date", "e", "", "End date for job spec")

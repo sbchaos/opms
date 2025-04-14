@@ -3,6 +3,7 @@ package cmd
 import (
 	cli "github.com/spf13/cobra"
 
+	"github.com/sbchaos/opms/cmd/airflow"
 	"github.com/sbchaos/opms/cmd/bq"
 	"github.com/sbchaos/opms/cmd/drive"
 	"github.com/sbchaos/opms/cmd/gsheet"
@@ -39,6 +40,7 @@ func New(cfg *config.Config) *cli.Command {
 		oss.NewOSSCommand(cfg),
 		drive.NewDriveCommand(cfg),
 		gsheet.NewGsheetsCommand(cfg),
+		airflow.NewAirflowCommand(cfg),
 	)
 
 	return cmd
