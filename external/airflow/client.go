@@ -17,7 +17,7 @@ type Request struct {
 	Body   []byte
 }
 
-type SchedulerAuth struct {
+type Auth struct {
 	Host  string `json:"host"`
 	Token string `json:"token"`
 }
@@ -30,7 +30,7 @@ func NewAirflowClient() *Client {
 	return &Client{client: &http.Client{}}
 }
 
-func (ac Client) Invoke(ctx context.Context, r Request, auth SchedulerAuth) ([]byte, error) {
+func (ac Client) Invoke(ctx context.Context, r Request, auth Auth) ([]byte, error) {
 	var resp []byte
 
 	endpoint := buildEndPoint(auth.Host, r.Path)

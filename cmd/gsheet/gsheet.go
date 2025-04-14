@@ -15,6 +15,7 @@ func NewGsheetsCommand(cfg *config.Config) *cobra.Command {
 
 	cmd.AddCommand(
 		NewReadCommand(cfg),
+		NewDeleteCommand(cfg),
 	)
 	return cmd
 }

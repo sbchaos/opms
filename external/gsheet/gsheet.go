@@ -76,3 +76,27 @@ func GetSheetName(srv *sheets.Service, sheetURL string) (string, error) {
 	sid := spreadsheet.Sheets[0].Properties.Title
 	return sid, err
 }
+
+func GetSheets(srv *sheets.Service, sheetID string) ([]*sheets.Sheet, error) {
+	resp, err := srv.Spreadsheets.Get(sheetID).Do()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.Sheets) == 0 {
+		return nil, errors.New("no sheets found")
+	}
+
+	return resp.Sheets, nil
+}
+
+func DeleteSheet(srv *sheets.Service, spreadsheetID string, sheetID int64) error {
+	_, err := srv.Spreadsheets.BatchUpdate(spreadsheetID, &sheets.BatchUpdateSpreadsheetRequest{
+		Requests: []*sheets.Request{
+			{
+				DeleteSheet: &sheets.DeleteSheetRequest{SheetId: sheetID},
+			},
+		},
+	}).Do()
+	return err
+}

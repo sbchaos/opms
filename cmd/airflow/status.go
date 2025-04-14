@@ -32,7 +32,7 @@ type statusCommand struct {
 	status string
 
 	authFile string
-	auth     airflow.SchedulerAuth
+	auth     airflow.Auth
 
 	workers int
 	client  *airflow.Client
@@ -59,7 +59,7 @@ func NewStatusCommand(cfg *config.Config) *cobra.Command {
 }
 
 func (s *statusCommand) RunE(_ *cobra.Command, _ []string) error {
-	var auth airflow.SchedulerAuth
+	var auth airflow.Auth
 	if s.authFile == "" {
 		return fmt.Errorf("--auth-file is required")
 	}
