@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -35,6 +36,7 @@ type statusCommand struct {
 
 	workers int
 	client  *airflow.Client
+	mu      *sync.Mutex
 }
 
 func NewStatusCommand(cfg *config.Config) *cobra.Command {
@@ -98,6 +100,7 @@ func (s *statusCommand) RunE(_ *cobra.Command, _ []string) error {
 
 	client := airflow.NewAirflowClient()
 	s.client = client
+	s.mu = &sync.Mutex{}
 
 	t := term.FromEnv(0, 0)
 	size, _ := t.Size(120)
@@ -127,7 +130,6 @@ func (s *statusCommand) RunE(_ *cobra.Command, _ []string) error {
 }
 
 func (s *statusCommand) updateJobState(ctx context.Context, jobName string, data []byte, printer table.Printer) error {
-	printer.AddField(jobName)
 	req := airflow.Request{
 		Path:   fmt.Sprintf(dagURL, jobName),
 		Method: http.MethodPatch,
@@ -135,6 +137,9 @@ func (s *statusCommand) updateJobState(ctx context.Context, jobName string, data
 	}
 	_, err := s.client.Invoke(ctx, req, s.auth)
 
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	printer.AddField(jobName)
 	if err == nil {
 		printer.AddField("Success")
 	} else {
