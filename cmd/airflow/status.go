@@ -2,6 +2,7 @@ package airflow
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -37,6 +38,11 @@ type statusCommand struct {
 	workers int
 	client  *airflow.Client
 	mu      *sync.Mutex
+}
+
+type Response struct {
+	DagID    string `json:"dag_id"`
+	IsPaused bool   `json:"is_paused"`
 }
 
 func NewStatusCommand(cfg *config.Config) *cobra.Command {
@@ -130,22 +136,31 @@ func (s *statusCommand) RunE(_ *cobra.Command, _ []string) error {
 }
 
 func (s *statusCommand) updateJobState(ctx context.Context, jobName string, data []byte, printer table.Printer) error {
+	status := "Failed"
+
 	req := airflow.Request{
 		Path:   fmt.Sprintf(dagURL, jobName),
 		Method: http.MethodPatch,
 		Body:   data,
 	}
-	_, err := s.client.Invoke(ctx, req, s.auth)
+	content, err := s.client.Invoke(ctx, req, s.auth)
+	if err == nil {
+		var resp Response
+		err = json.Unmarshal(content, &resp)
+		if err == nil {
+			paused := s.status == "disabled"
+			if paused == resp.IsPaused {
+				status = "Success"
+			}
+		} else {
+			err = fmt.Errorf("invalid response from Airflow: %v", err)
+		}
+	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	printer.AddField(jobName)
-	if err == nil {
-		printer.AddField("Success")
-	} else {
-		printer.AddField("Failed")
-	}
-
+	printer.AddField(status)
 	printer.EndRow()
 	return err
 }
