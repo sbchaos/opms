@@ -49,7 +49,7 @@ func NewStatusCommand(cfg *config.Config) *cobra.Command {
 		RunE:    status.RunE,
 	}
 
-	cmd.Flags().StringVarP(&status.status, "status", "s", "disable", "enable/disable")
+	cmd.Flags().StringVarP(&status.status, "status", "s", "disabled", "enabled/disabled")
 	cmd.Flags().StringVarP(&status.name, "name", "n", "", "Name of job to enable/disable")
 	cmd.Flags().StringVarP(&status.fileName, "filename", "f", "", "Filename with list of jobs to enable/disable")
 	cmd.Flags().StringVarP(&status.authFile, "auth-file", "a", "", "Authentication json path")
