@@ -95,7 +95,7 @@ func (s *watchCommand) RunE(_ *cobra.Command, _ []string) error {
 
 	for {
 		printer.Clear()
-		fmt.Println("\033c")
+		fmt.Println("\033[H\033c")
 		outchan := pool.RunWithWorkers(5, tasks)
 		printer.Render()
 
