@@ -19,6 +19,10 @@ import (
 	"github.com/sbchaos/opms/lib/term"
 )
 
+type Result struct {
+	output [][]string
+}
+
 type watchCommand struct {
 	cfg *config.Config
 
@@ -80,12 +84,13 @@ func (s *watchCommand) RunE(_ *cobra.Command, _ []string) error {
 	t := term.FromEnv(0, 0)
 	size, _ := t.Size(120)
 	printer := table.New(os.Stdout, t.IsTerminalOutput(), size)
-	printer.AddHeader([]string{"Job", "Status", "Interval", "Next_Run"})
+
+	res := &Result{output: make([][]string, 0)}
 
 	tasks := make([]func() pool.JobResult[string], len(jobNames))
 	for i, t1 := range jobNames {
 		tasks[i] = func() pool.JobResult[string] {
-			err := s.getJobStatus(ctx, t1, printer)
+			err = s.getJobStatus(ctx, t1, res)
 			return pool.JobResult[string]{
 				Output: t1,
 				Err:    err,
@@ -94,10 +99,24 @@ func (s *watchCommand) RunE(_ *cobra.Command, _ []string) error {
 	}
 
 	for {
-		printer.Clear()
-		fmt.Println("\033[H\033c")
 		outchan := pool.RunWithWorkers(5, tasks)
+		printer.Clear()
+		printer.AddField("Job")
+		printer.AddField("Status")
+		printer.AddField("Interval")
+		printer.AddField("Next_Run")
+		printer.EndRow()
+
+		for _, d := range res.output {
+			printer.AddField(d[0])
+			printer.AddField(d[1])
+			printer.AddField(d[2])
+			printer.AddField(d[3])
+			printer.EndRow()
+		}
+		fmt.Println("\033[H\033c")
 		printer.Render()
+		res.output = make([][]string, 0)
 
 		for out := range outchan {
 			if out.Err != nil {
@@ -110,7 +129,7 @@ func (s *watchCommand) RunE(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func (s *watchCommand) getJobStatus(ctx context.Context, jobName string, printer table.Printer) error {
+func (s *watchCommand) getJobStatus(ctx context.Context, jobName string, res *Result) error {
 	status := "Failed"
 
 	req := airflow.Request{
@@ -134,10 +153,6 @@ func (s *watchCommand) getJobStatus(ctx context.Context, jobName string, printer
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	printer.AddField(jobName)
-	printer.AddField(status)
-	printer.AddField(resp.ScheduleInterval.Value)
-	printer.AddField(resp.NextDagRun)
-	printer.EndRow()
+	res.output = append(res.output, []string{jobName, status, resp.ScheduleInterval.Value, resp.NextDagRun})
 	return err
 }
