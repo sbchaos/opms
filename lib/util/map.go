@@ -65,3 +65,13 @@ func ConfigAs[T any](mapping map[string]any, key string) (T, bool) {
 	}
 	return zero, false
 }
+
+func Merge[K comparable, V any](maps ...map[K]V) map[K]V {
+	smp := map[K]V{}
+	for _, mp := range maps {
+		for k, v := range mp {
+			smp[k] = v
+		}
+	}
+	return smp
+}

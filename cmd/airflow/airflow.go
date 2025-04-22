@@ -16,6 +16,7 @@ func NewAirflowCommand(cfg *config.Config) *cobra.Command {
 
 	cmd.AddCommand(
 		NewStatusCommand(cfg),
+		NewWatchCommand(cfg),
 	)
 	return cmd
 }

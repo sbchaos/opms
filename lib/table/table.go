@@ -18,6 +18,7 @@ type Printer interface {
 	AddField(string, ...fieldOption)
 	EndRow()
 	Render() error
+	Clear()
 }
 
 // WithTruncate overrides the truncation function for the field. The function should transform a string
@@ -108,6 +109,10 @@ func (t *ttyPrinter) AddField(s string, opts ...fieldOption) {
 
 func (t *ttyPrinter) EndRow() {
 	t.rows = append(t.rows, []tableField{})
+}
+
+func (t *ttyPrinter) Clear() {
+	t.rows = nil
 }
 
 func (t *ttyPrinter) Render() error {
@@ -252,6 +257,10 @@ func (t *tsvTablePrinter) AddField(text string, _ ...fieldOption) {
 func (t *tsvTablePrinter) EndRow() {
 	fmt.Fprint(t.out, "\n")
 	t.currentCol = 0
+}
+
+func (t *tsvTablePrinter) Clear() {
+	// no way to clear
 }
 
 func (t *tsvTablePrinter) Render() error {
