@@ -75,3 +75,29 @@ type Schedule struct {
 type Tag struct {
 	Name string `json:"name"`
 }
+
+type TasksResponse struct {
+	Tasks []Task `json:"tasks"`
+}
+
+type Task struct {
+	TaskId                  string    `json:"task_id"`
+	TaskDisplayName         string    `json:"task_display_name"`
+	Owner                   string    `json:"owner"`
+	StartDate               time.Time `json:"start_date"`
+	EndDate                 time.Time `json:"end_date"`
+	TriggerRule             string    `json:"trigger_rule"`
+	DependsOnPast           bool      `json:"depends_on_past"`
+	IsMapped                bool      `json:"is_mapped"`
+	WaitForDownstream       bool      `json:"wait_for_downstream"`
+	Retries                 int       `json:"retries"`
+	Queue                   string    `json:"queue"`
+	Executor                string    `json:"executor"`
+	Pool                    string    `json:"pool"`
+	PoolSlots               int       `json:"pool_slots"`
+	RetryExponentialBackoff bool      `json:"retry_exponential_backoff"`
+	PriorityWeight          int       `json:"priority_weight"`
+	WeightRule              string    `json:"weight_rule"`
+	DownstreamTaskIds       []string  `json:"downstream_task_ids"`
+	DocMd                   string    `json:"doc_md"`
+}

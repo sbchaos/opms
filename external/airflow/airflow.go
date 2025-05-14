@@ -32,7 +32,7 @@ type JobRunsCriteria struct {
 	OnlyLastRun bool
 }
 
-func (s *Airflow) FetchJobRunBatch(ctx context.Context, jobQuery *JobRunsCriteria) ([]byte, error) {
+func (s *Airflow) FetchJobRunBatch(ctx context.Context, jobQuery *JobRunsCriteria) (*DagRunListResponse, error) {
 	dagRunRequest := getDagRunRequest(jobQuery)
 	reqBody, err := json.Marshal(dagRunRequest)
 	if err != nil {
@@ -45,7 +45,17 @@ func (s *Airflow) FetchJobRunBatch(ctx context.Context, jobQuery *JobRunsCriteri
 		Body:   reqBody,
 	}
 
-	return s.client.Invoke(ctx, req, s.auth)
+	resp, err := s.client.Invoke(ctx, req, s.auth)
+	if err != nil {
+		return nil, fmt.Errorf("unable to invoke dag runs: %w", err)
+	}
+
+	var dagRunList DagRunListResponse
+	if err := json.Unmarshal(resp, &dagRunList); err != nil {
+		return nil, fmt.Errorf("json error on parsing airflow dag runs: %s, %w", string(resp), err)
+	}
+
+	return &dagRunList, nil
 }
 
 //
