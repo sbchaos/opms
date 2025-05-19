@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sbchaos/opms/lib/table"
+	"github.com/sbchaos/opms/lib/printers/table"
 )
 
 func E1TablePrinter() {

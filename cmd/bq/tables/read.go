@@ -14,7 +14,7 @@ import (
 	"github.com/sbchaos/opms/external/gcp"
 	"github.com/sbchaos/opms/lib/config"
 	"github.com/sbchaos/opms/lib/names"
-	"github.com/sbchaos/opms/lib/table"
+	"github.com/sbchaos/opms/lib/printers/table"
 	"github.com/sbchaos/opms/lib/term"
 )
 

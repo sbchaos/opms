@@ -17,7 +17,7 @@ import (
 	"github.com/sbchaos/opms/lib/cmdutil"
 	"github.com/sbchaos/opms/lib/config"
 	"github.com/sbchaos/opms/lib/pool"
-	"github.com/sbchaos/opms/lib/table"
+	"github.com/sbchaos/opms/lib/printers/table"
 	"github.com/sbchaos/opms/lib/term"
 )
 
