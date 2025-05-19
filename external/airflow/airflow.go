@@ -17,6 +17,8 @@ const (
 	dagRunCreateURL   = "api/v1/dags/%s/dagRuns"
 	dagRunModifyURL   = "api/v1/dags/%s/dagRuns/%s"
 	airflowDateFormat = "2006-01-02T15:04:05+00:00"
+
+	taskInstances = "api/v1/dags/%s/dagRuns/%s/taskInstances"
 )
 
 type Airflow struct {
@@ -202,6 +204,25 @@ func (s *Airflow) CreateRun(ctx context.Context, jobName string, executionTime t
 		return fmt.Errorf("failure while creating airflow dag run: %w", err)
 	}
 	return nil
+}
+
+func (s *Airflow) TaskInstances(ctx context.Context, dagID string, dagRunID string) (*TaskInstances, error) {
+	req := Request{
+		Path:   fmt.Sprintf(taskInstances, dagID, dagRunID),
+		Method: http.MethodGet,
+	}
+
+	resp, err := s.client.Invoke(ctx, req, s.auth)
+	if err != nil {
+		return nil, fmt.Errorf("unable to invoke task instances: %w", err)
+	}
+
+	var tasks TaskInstances
+	if err := json.Unmarshal(resp, &tasks); err != nil {
+		return nil, fmt.Errorf("json error on parsing airflow task runs: %s, %w", string(resp), err)
+	}
+
+	return &tasks, nil
 }
 
 func NewAirflow(auth Auth) *Airflow {

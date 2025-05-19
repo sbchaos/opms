@@ -101,3 +101,22 @@ type Task struct {
 	DownstreamTaskIds       []string  `json:"downstream_task_ids"`
 	DocMd                   string    `json:"doc_md"`
 }
+
+type TaskInstances struct {
+	TaskInstances []TaskInstance `json:"task_instances"`
+	TotalEntries  int            `json:"total_entries"`
+}
+
+type TaskInstance struct {
+	TaskId          string    `json:"task_id"`
+	TaskDisplayName string    `json:"task_display_name"`
+	DagId           string    `json:"dag_id"`
+	DagRunId        string    `json:"dag_run_id"`
+	ExecutionDate   time.Time `json:"execution_date"`
+	StartDate       time.Time `json:"start_date"`
+	EndDate         time.Time `json:"end_date"`
+	Duration        float64   `json:"duration"`
+	State           string    `json:"state"`
+	TryNumber       int       `json:"try_number"`
+	Note            string    `json:"note"`
+}
