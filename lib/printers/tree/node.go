@@ -23,21 +23,24 @@ var (
 )
 
 type Tree[V any] struct {
-	root *Node[V]
-	schm color.Scheme
+	root  *Node[V]
+	schm  color.Scheme
+	width int
 }
 
 func NewTreeWithAutoDetect[V any]() *Tree[V] {
 	t := term.FromEnv(0, 0)
 	scheme := color.NewColorScheme(t.IsColorEnabled(), t.Is256ColorSupported(), t.IsTrueColorSupported())
-	return NewTree[V](scheme)
+	width, _ := t.Size(120)
+	return NewTree[V](scheme, width)
 }
 
-func NewTree[V any](scheme color.Scheme) *Tree[V] {
+func NewTree[V any](scheme color.Scheme, width int) *Tree[V] {
 	var zero V
 	return &Tree[V]{
-		schm: scheme,
-		root: NewNode("Root", zero),
+		schm:  scheme,
+		width: width,
+		root:  NewNode("Root", zero),
 	}
 }
 
@@ -51,9 +54,9 @@ func (t *Tree[V]) Render(w io.Writer) {
 	}
 
 	f := t.root.children[0]
-	fmt.Fprintf(w, t.schm.Colorize(f.Color, f.Style, f.Content()))
+	fmt.Fprintf(w, f.format(t.schm))
 	fmt.Fprintf(w, "\n")
-	f.Print(w, t.schm, "")
+	f.Print(w, t.schm, "", t.width)
 }
 
 type Node[V any] struct {
@@ -93,7 +96,7 @@ func (n *Node[V]) AddChild(name string, v V) {
 	})
 }
 
-func (n *Node[V]) Print(w io.Writer, schm color.Scheme, parenPrefix string) {
+func (n *Node[V]) Print(w io.Writer, schm color.Scheme, parenPrefix string, width int) {
 	num := len(n.children)
 	i := 0
 	for _, child := range n.children {
@@ -106,20 +109,27 @@ func (n *Node[V]) Print(w io.Writer, schm color.Scheme, parenPrefix string) {
 			paren = EdgeTypeEmpty
 		}
 
-		toShow := schm.Colorize(child.Color, child.Style, child.Content())
-		fmt.Fprintf(w, "%s%s %s\n", parenPrefix, curr, toShow)
+		toShow := child.format(schm)
+		if len(toShow)+len(parenPrefix)+2 < width {
+			fmt.Fprintf(w, "%s%s %s\n", parenPrefix, curr, toShow)
+		} else {
+			childName := schm.Colorize(child.Color, child.Style, child.Key)
+			val := schm.Colorize(child.Color, child.Style, fmt.Sprintf("%s", child.Value))
+			fmt.Fprintf(w, "%s%s %s\n", parenPrefix, curr, childName)
+			fmt.Fprintf(w, "%s%s  [%s]\n", parenPrefix, paren, val)
+		}
 
 		prefix := fmt.Sprintf("%s%s%s", parenPrefix, paren, indent)
-		child.Print(w, schm, prefix)
+		child.Print(w, schm, prefix, width)
 	}
 }
 
 func (n *Node[V]) String() {
 	fmt.Fprintf(os.Stdout, "%s [%v]\n", n.Key, n.Value)
 	noScheme := color.NewColorScheme(false, false, false)
-	n.Print(os.Stdout, noScheme, "")
+	n.Print(os.Stdout, noScheme, "", 120)
 }
 
-func (n *Node[V]) Content() string {
-	return fmt.Sprintf("%s [%v]", n.Key, n.Value)
+func (n *Node[V]) format(schm color.Scheme) string {
+	return schm.Colorize(n.Color, n.Style, fmt.Sprintf("%s [%v]", n.Key, n.Value))
 }
