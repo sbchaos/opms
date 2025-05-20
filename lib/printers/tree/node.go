@@ -1,8 +1,12 @@
 package tree
 
 import (
-	"bytes"
 	"fmt"
+	"io"
+	"os"
+
+	"github.com/sbchaos/opms/lib/color"
+	"github.com/sbchaos/opms/lib/term"
 )
 
 type EdgeType string
@@ -15,11 +19,42 @@ var (
 )
 
 var (
-	bold  = "\033[1;"
-	reset = "\033[0m"
-
 	indent = "    "
 )
+
+type Tree[V any] struct {
+	root *Node[V]
+	schm color.Scheme
+}
+
+func NewTreeWithAutoDetect[V any]() *Tree[V] {
+	t := term.FromEnv(0, 0)
+	scheme := color.NewColorScheme(t.IsColorEnabled(), t.Is256ColorSupported(), t.IsTrueColorSupported())
+	return NewTree[V](scheme)
+}
+
+func NewTree[V any](scheme color.Scheme) *Tree[V] {
+	var zero V
+	return &Tree[V]{
+		schm: scheme,
+		root: NewNode("Root", zero),
+	}
+}
+
+func (t *Tree[V]) Root() *Node[V] {
+	return t.root
+}
+
+func (t *Tree[V]) Render(w io.Writer) {
+	if len(t.root.children) == 0 {
+		fmt.Fprintf(w, t.schm.Colorize(color.LightRed, "", "<Tree is Empty>\n"))
+	}
+
+	f := t.root.children[0]
+	fmt.Fprintf(w, t.schm.Colorize(f.Color, f.Style, f.Content()))
+	fmt.Fprintf(w, "\n")
+	f.Print(w, t.schm, "")
+}
 
 type Node[V any] struct {
 	level int
@@ -27,6 +62,9 @@ type Node[V any] struct {
 	children []*Node[V]
 	Value    V
 	Key      string
+
+	Color int
+	Style string
 }
 
 func (n *Node[V]) Level() int {
@@ -55,7 +93,7 @@ func (n *Node[V]) AddChild(name string, v V) {
 	})
 }
 
-func (n *Node[V]) Bytes(buf *bytes.Buffer, parenPrefix string) []byte {
+func (n *Node[V]) Print(w io.Writer, schm color.Scheme, parenPrefix string) {
 	num := len(n.children)
 	i := 0
 	for _, child := range n.children {
@@ -67,18 +105,21 @@ func (n *Node[V]) Bytes(buf *bytes.Buffer, parenPrefix string) []byte {
 			curr = EdgeTypeEnd
 			paren = EdgeTypeEmpty
 		}
-		content := fmt.Sprintf("%s [%v]", child.Key, child.Value)
-		fmt.Fprintf(buf, "%s%s %s \n", parenPrefix, curr, content)
+
+		toShow := schm.Colorize(child.Color, child.Style, child.Content())
+		fmt.Fprintf(w, "%s%s %s\n", parenPrefix, curr, toShow)
 
 		prefix := fmt.Sprintf("%s%s%s", parenPrefix, paren, indent)
-		child.Bytes(buf, prefix)
+		child.Print(w, schm, prefix)
 	}
-
-	return buf.Bytes()
 }
 
-func (n *Node[V]) String() string {
-	buf := new(bytes.Buffer)
-	fmt.Fprintf(buf, "%s [%v]\n", n.Key, n.Value)
-	return string(n.Bytes(buf, ""))
+func (n *Node[V]) String() {
+	fmt.Fprintf(os.Stdout, "%s [%v]\n", n.Key, n.Value)
+	noScheme := color.NewColorScheme(false, false, false)
+	n.Print(os.Stdout, noScheme, "")
+}
+
+func (n *Node[V]) Content() string {
+	return fmt.Sprintf("%s [%v]", n.Key, n.Value)
 }

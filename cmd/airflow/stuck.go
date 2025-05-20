@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/sbchaos/opms/external/airflow"
 	"github.com/sbchaos/opms/lib/cmdutil"
+	"github.com/sbchaos/opms/lib/color"
 	"github.com/sbchaos/opms/lib/config"
 	"github.com/sbchaos/opms/lib/printers/tree"
 	"github.com/sbchaos/opms/lib/util"
@@ -23,7 +25,7 @@ type stuckCommand struct {
 	authFile string
 	afl      *airflow.Airflow
 
-	level int
+	reqCache map[string]bool
 }
 
 func NewStuckCommand(cfg *config.Config) *cobra.Command {
@@ -62,11 +64,12 @@ func (s *stuckCommand) RunE(_ *cobra.Command, _ []string) error {
 
 	afl := airflow.NewAirflow(auth)
 	s.afl = afl
+	s.reqCache = make(map[string]bool)
 
-	root := tree.NewNode("Root", "Waiting")
-	errs := s.JobRunStatus(ctx, s.name, root)
+	treePrinter := tree.NewTreeWithAutoDetect[string]()
+	errs := s.JobRunStatus(ctx, s.name, treePrinter.Root())
 
-	fmt.Println(root.String())
+	treePrinter.Render(os.Stdout)
 
 	if len(errs) > 0 {
 		for _, e1 := range errs {
@@ -90,23 +93,22 @@ func (s *stuckCommand) JobRunStatus(ctx context.Context, name string, parent *tr
 	dagRun, err := s.afl.FetchJobRunBatch(ctx, &query)
 	if err != nil {
 		errs = append(errs, err)
-		parent.AddChild(name, "ErrorInFetch")
+		n1 := FailureNode(name, "ErrorInFetch")
+		parent.AddNode(n1)
 		return errs
 	}
 
 	if dagRun == nil || len(dagRun.DagRuns) == 0 {
 		errs = append(errs, fmt.Errorf("job runs not found for %s", name))
-		parent.AddChild(name, "EmptyJobRun")
+		n1 := FailureNode(name, "ErrorInFetch")
+		parent.AddNode(n1)
 		return errs
 	}
 
 	r1 := dagRun.DagRuns[0]
-	state := r1.State
-	if !r1.EndDate.IsZero() {
-		state += " " + util.ToISO(r1.EndDate)
-	}
-	node := tree.NewNode(name, state)
+	node := Node(name, r1.State, r1.EndDate, 0)
 	parent.AddNode(node)
+	s.reqCache[name] = true
 
 	instances, err := s.afl.TaskInstances(ctx, r1.DagID, r1.DagRunID)
 	if err != nil {
@@ -119,28 +121,61 @@ func (s *stuckCommand) JobRunStatus(ctx context.Context, name string, parent *tr
 			lastIdx := strings.LastIndex(t1.TaskDisplayName, "-")
 			upstreamName := t1.TaskDisplayName[5:lastIdx]
 
-			if !strings.EqualFold(t1.State, "success") {
-				childErrs := s.JobRunStatus(ctx, upstreamName, node)
-				if childErrs != nil {
-					errs = append(errs, childErrs...)
-				}
-			} else {
-				status := fmt.Sprintf("success %s", util.ToISO(t1.EndDate))
-				node.AddChild(upstreamName, status)
+			if strings.EqualFold(t1.State, "success") {
+				node.AddNode(SuccessNode(upstreamName, t1.EndDate))
+				continue
+			}
+
+			_, ok := s.reqCache[upstreamName]
+			if ok {
+				node.AddNode(Node(upstreamName, "Repeat", time.Time{}, 0))
+				continue
+			}
+
+			childErrs := s.JobRunStatus(ctx, upstreamName, node)
+			if childErrs != nil {
+				errs = append(errs, childErrs...)
 			}
 
 			continue
 		}
-		status := "Waiting"
-		if t1.State != "" {
-			status = t1.State
-			if !t1.EndDate.IsZero() {
-				status += " " + util.ToISO(t1.EndDate)
-			}
-		}
-
-		node.AddChild(t1.TaskDisplayName, status)
+		n1 := Node(t1.TaskDisplayName, t1.State, t1.EndDate, 0)
+		node.AddNode(n1)
 	}
 
 	return errs
+}
+
+func Node(name, status string, end time.Time, col int) *tree.Node[string] {
+	display := "Pending"
+	if status != "" {
+		display = status
+	}
+	if !end.IsZero() {
+		display += " " + util.ToISO(end)
+	}
+	n1 := tree.NewNode(name, display)
+	if col > 0 {
+		n1.Color = col
+	} else {
+		if strings.EqualFold(status, "success") {
+			n1.Color = color.Green
+		} else if strings.EqualFold(status, "failure") {
+			n1.Color = color.Red
+		} else if strings.EqualFold(status, "up_for_retry") {
+			n1.Color = color.Yellow
+		} else if strings.EqualFold(status, "Repeat") {
+			n1.Color = color.DarkGray
+		}
+	}
+	return n1
+}
+
+func SuccessNode(name string, end time.Time) *tree.Node[string] {
+	status := "Success"
+	return Node(name, status, end, color.Green)
+}
+
+func FailureNode(name string, status string) *tree.Node[string] {
+	return Node(name, status, time.Time{}, color.Red)
 }

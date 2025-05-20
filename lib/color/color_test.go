@@ -15,7 +15,7 @@ func TestColorFromRGB(t *testing.T) {
 		hex   string
 		text  string
 		wants string
-		cs    *color.Scheme
+		cs    color.Scheme
 	}{
 		{
 			name:  "truecolor",
@@ -59,7 +59,7 @@ func TestHexToRGB(t *testing.T) {
 		hex   string
 		text  string
 		wants string
-		cs    *color.Scheme
+		cs    color.Scheme
 	}{
 		{
 			name:  "truecolor",
@@ -103,6 +103,4 @@ func TestColors(t *testing.T) {
 		colored := schm.Colorize(c, color.Normal, "text")
 		fmt.Println(colored)
 	}
-
-	//fmt.Println(schm.Colorize(255, color.HighlightStyle, "text"))
 }

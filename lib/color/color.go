@@ -25,31 +25,31 @@ const (
 const (
 	Reset = "\033[0m"
 
-	Magenta      = 35
-	LightGray    = 37
-	DarkGray     = 90
-	LightRed     = 91
-	LightGreen   = 92
-	LightYellow  = 93
-	LightBlue    = 94
-	LightMagenta = 95
-	LightCyan    = 96
+	Magenta      = 164
+	LightGray    = 7
+	DarkGray     = 8
+	LightRed     = 160
+	LightGreen   = 40
+	LightYellow  = 184
+	LightBlue    = 81
+	LightMagenta = 206
+	LightCyan    = 43
 
-	Black  = 30
-	Cyan   = 36
-	Red    = 31
-	Green  = 32
-	Yellow = 33
-	Blue   = 34
-	White  = 38
+	Black  = 233
+	Cyan   = 43
+	Red    = 196
+	Green  = 36
+	Yellow = 220
+	Blue   = 39
+	White  = 231
 )
 
 func gray256(t string) string {
 	return fmt.Sprintf("\x1b[%d;5;%dm%s\x1b[m", 38, 242, t)
 }
 
-func NewColorScheme(enabled, is256enabled bool, trueColor bool) *Scheme {
-	return &Scheme{
+func NewColorScheme(enabled, is256enabled bool, trueColor bool) Scheme {
+	return Scheme{
 		enabled:      enabled,
 		is256enabled: is256enabled,
 		hasTrueColor: trueColor,
@@ -62,17 +62,27 @@ type Scheme struct {
 	hasTrueColor bool
 }
 
-func (c *Scheme) Enabled() bool {
+func (c Scheme) Enabled() bool {
 	return c.enabled
 }
 
-func (c *Scheme) Colorize(color int, style string, t string) string {
+func (c Scheme) Colorize(color int, style string, t string) string {
+	if !c.enabled {
+		return t
+	}
+
+	if color == 0 && style == "" {
+		return t
+	}
+
 	buf := bytes.NewBufferString(Start)
 	if style != "" {
 		buf.WriteString(style)
 	}
 
-	fmt.Fprintf(buf, "38;5;%dm", color)
+	if color > 0 {
+		fmt.Fprintf(buf, "38;5;%dm", color)
+	}
 	buf.WriteString(t)
 	buf.WriteString(Reset)
 	return buf.String()
@@ -80,14 +90,14 @@ func (c *Scheme) Colorize(color int, style string, t string) string {
 
 // ColorFromRGB returns a function suitable for TablePrinter.AddField
 // that calls HexToRGB, coloring text if supported by the terminal.
-func (c *Scheme) ColorFromRGB(hex string) func(string) string {
+func (c Scheme) ColorFromRGB(hex string) func(string) string {
 	return func(s string) string {
 		return c.HexToRGB(hex, s)
 	}
 }
 
 // HexToRGB uses the given hex to color x if supported by the terminal.
-func (c *Scheme) HexToRGB(hex string, x string) string {
+func (c Scheme) HexToRGB(hex string, x string) string {
 	if !c.enabled || !c.hasTrueColor || len(hex) != 6 {
 		return x
 	}
