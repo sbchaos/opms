@@ -44,7 +44,7 @@ const (
 	White  = 231
 )
 
-func gray256(t string) string {
+func gray256(t string) string { // nolint
 	return fmt.Sprintf("\x1b[%d;5;%dm%s\x1b[m", 38, 242, t)
 }
 

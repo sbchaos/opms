@@ -126,7 +126,7 @@ func (s *watchCommand) RunE(_ *cobra.Command, _ []string) error {
 
 		time.Sleep(time.Duration(s.interval) * time.Second)
 	}
-	return nil
+
 }
 
 func (s *watchCommand) getJobStatus(ctx context.Context, jobName string, res *Result) error {

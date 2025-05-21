@@ -50,12 +50,12 @@ func (t *Tree[V]) Root() *Node[V] {
 
 func (t *Tree[V]) Render(w io.Writer) {
 	if len(t.root.children) == 0 {
-		fmt.Fprintf(w, t.schm.Colorize(color.LightRed, "", "<Tree is Empty>\n"))
+		fmt.Fprintf(w, "%s", t.schm.Colorize(color.LightRed, "", "<Tree is Empty>\n"))
 	}
 
 	f := t.root.children[0]
-	fmt.Fprintf(w, f.format(t.schm))
-	fmt.Fprintf(w, "\n")
+	fmt.Fprintf(w, "%s", f.format(t.schm))
+	fmt.Fprint(w, "\n")
 	f.Print(w, t.schm, "", t.width)
 }
 
@@ -114,7 +114,7 @@ func (n *Node[V]) Print(w io.Writer, schm color.Scheme, parenPrefix string, widt
 			fmt.Fprintf(w, "%s%s %s\n", parenPrefix, curr, toShow)
 		} else {
 			childName := schm.Colorize(child.Color, child.Style, child.Key)
-			val := schm.Colorize(child.Color, child.Style, fmt.Sprintf("%s", child.Value))
+			val := schm.Colorize(child.Color, child.Style, fmt.Sprintf("%v", child.Value))
 			fmt.Fprintf(w, "%s%s %s\n", parenPrefix, curr, childName)
 			fmt.Fprintf(w, "%s%s  [%s]\n", parenPrefix, paren, val)
 		}

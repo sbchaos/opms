@@ -1,13 +1,32 @@
+version: "2"
 run:
-  timeout: 5m
   go: "1.24"
 linters:
   disable:
     - errcheck
-linters-settings:
-  gofumpt:
-    extra-rules: true
-  goimports:
-    local-prefixes: github.com/sbchaos/opms
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 severity:
-  default-severity: error
+  default: error
+formatters:
+  settings:
+    gofumpt:
+      extra-rules: true
+    goimports:
+      local-prefixes:
+        - github.com/sbchaos/opms
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

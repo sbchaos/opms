@@ -22,4 +22,4 @@ lint:
 
 install: ## install required dependencies
 	@echo "> installing dependencies"
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.5
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6

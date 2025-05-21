@@ -36,7 +36,7 @@ const (
 var (
 	cfg     *Config
 	once    sync.Once
-	loadErr = errors.New("unable to load config")
+	errLoad = errors.New("unable to load config")
 )
 
 type Config struct {
@@ -49,9 +49,9 @@ type Config struct {
 
 var Read = func(fallback *Config) (*Config, error) {
 	once.Do(func() {
-		cfg, loadErr = load(generalConfigFile(), fallback)
+		cfg, errLoad = load(generalConfigFile(), fallback)
 	})
-	return cfg, loadErr
+	return cfg, errLoad
 }
 
 const defaultConfigStr = `

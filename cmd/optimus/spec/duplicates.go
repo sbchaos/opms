@@ -41,7 +41,7 @@ func (r *duplicatesCommand) RunE(_ *cobra.Command, _ []string) error {
 	jobNameMapping := map[string][]string{}
 	resourceNameMapping := map[string][]string{}
 
-	walker := func(path string, d fs.DirEntry, err error) error {
+	walker := func(path string, d fs.DirEntry, _ error) error {
 		if d.IsDir() {
 			return nil
 		}
@@ -50,9 +50,10 @@ func (r *duplicatesCommand) RunE(_ *cobra.Command, _ []string) error {
 		resourceYaml := false
 
 		fileName := filepath.Base(path)
-		if fileName == "job.yaml" || fileName == "job.yml" {
+		switch fileName {
+		case "job.yaml", "job.yml":
 			jobYaml = true
-		} else if fileName == "resource.yaml" || fileName == "resource.yml" {
+		case "resource.yaml", "resource.yml":
 			resourceYaml = true
 		}
 

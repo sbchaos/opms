@@ -65,13 +65,13 @@ func (r *endDateCommand) RunE(_ *cobra.Command, _ []string) error {
 		checkJobs = len(jobs) > 0
 	}
 
-	walker := func(path string, d fs.DirEntry, err error) error {
+	walker := func(path string, d fs.DirEntry, _ error) error {
 		if d.IsDir() {
 			return nil
 		}
 
 		fileName := filepath.Base(path)
-		if !(fileName == "job.yaml" || fileName == "job.yml") {
+		if fileName != "job.yaml" && fileName != "job.yml" {
 			return nil
 		}
 

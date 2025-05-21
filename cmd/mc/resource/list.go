@@ -19,8 +19,7 @@ type listCommand struct {
 	project string
 	schema  string
 
-	namePrefix   string
-	resourceType string
+	namePrefix string
 }
 
 func NewListCommand(cfg *config.Config) *cobra.Command {
@@ -37,7 +36,6 @@ func NewListCommand(cfg *config.Config) *cobra.Command {
 	cmd.Flags().StringVarP(&list.schema, "schema", "s", "", "Schema")
 
 	cmd.Flags().StringVarP(&list.namePrefix, "prefix", "n", "", "Resource name prefix")
-	//cmd.Flags().StringVarP(&list.resourceType, "type", "t", "", "Resource type to query")
 	return cmd
 }
 
