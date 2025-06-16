@@ -16,6 +16,7 @@ func NewDriveCommand(cfg *config.Config) *cobra.Command {
 	cmd.AddCommand(
 		NewDownloadCommand(cfg),
 		NewSyncCommand(cfg),
+		NewDeleteCommand(cfg),
 	)
 	return cmd
 }

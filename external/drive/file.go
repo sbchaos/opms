@@ -50,3 +50,7 @@ func (f File) Download(d *drive.Service) error {
 
 	return cmdutil.WriteFile(f.Path, contents)
 }
+
+func (f File) Delete(d *drive.Service) error {
+	return d.Files.Delete(f.DriveFile.Id).Do()
+}
