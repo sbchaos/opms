@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -153,7 +154,7 @@ func (r *planCommand) RunForNamespace(ns *conf.Namespace, toPlan *plan.Plan) {
 		j1 := plan.JobPlan{
 			Name:         jobName,
 			OldNamespace: nil,
-			Path:         paths[0],
+			Path:         filepath.Dir(paths[0]),
 		}
 		jobPlans = append(jobPlans, j1)
 	}
@@ -167,7 +168,7 @@ func (r *planCommand) RunForNamespace(ns *conf.Namespace, toPlan *plan.Plan) {
 		r1 := plan.ResourcePlan{
 			Name:         resName,
 			OldNamespace: nil,
-			Path:         paths[0],
+			Path:         filepath.Dir(paths[0]),
 			Datastore:    ns.Datastore[0].Type,
 		}
 		resourcePlans = append(resourcePlans, r1)
