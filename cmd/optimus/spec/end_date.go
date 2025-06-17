@@ -3,13 +3,12 @@ package spec
 import (
 	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 
+	"github.com/sbchaos/opms/cmd/optimus/internal/io"
 	"github.com/sbchaos/opms/cmd/optimus/internal/job"
 	"github.com/sbchaos/opms/lib/config"
 )
@@ -75,7 +74,7 @@ func (r *endDateCommand) RunE(_ *cobra.Command, _ []string) error {
 			return nil
 		}
 
-		spec, err := readSpec[job.YamlSpec](path)
+		spec, err := io.ReadSpec[job.YamlSpec](path)
 		if err != nil {
 			fmt.Printf("Unable to read spec for %s: %s", path, err)
 		}
@@ -98,7 +97,7 @@ func (r *endDateCommand) RunE(_ *cobra.Command, _ []string) error {
 		} else {
 			fmt.Printf("Processing %s\n", spec.Name)
 			spec.Schedule.EndDate = r.endDate
-			writeSpec(path, spec)
+			io.WriteSpec(path, spec)
 		}
 
 		return nil
@@ -110,15 +109,4 @@ func (r *endDateCommand) RunE(_ *cobra.Command, _ []string) error {
 	}
 
 	return nil
-}
-
-func writeSpec(filePath string, spec job.YamlSpec) error {
-	fileSpec, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("error creating spec under [%s]: %w", filePath, err)
-	}
-	indent := 2
-	encoder := yaml.NewEncoder(fileSpec)
-	encoder.SetIndent(indent)
-	return encoder.Encode(spec)
 }

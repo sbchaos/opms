@@ -3,12 +3,10 @@ package external_table
 import (
 	"bytes"
 	_ "embed"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 	"text/template"
 
@@ -102,22 +100,24 @@ func (r *etCommand) PreRunE(_ *cobra.Command, _ []string) error {
 
 	r.typeMap = map[string]string{}
 	if r.typeMapJson != "" {
-		typeMap, err := readJson(r.typeMapJson)
-		if err != nil {
-			return err
+		mapping := make(map[string]string)
+		err2 := cmdutil.ReadJsonFile(r.typeMapJson, os.Stdin, mapping)
+		if err2 != nil {
+			return err2
 		}
-		r.typeMap = typeMap
+		r.typeMap = mapping
 	} else {
 		fmt.Println("No mapping found for table types")
 	}
 
 	r.projMap = map[string]string{}
 	if r.projMapJson != "" {
-		projMap, err := readJson(r.projMapJson)
-		if err != nil {
-			return err
+		mapping := make(map[string]string)
+		err2 := cmdutil.ReadJsonFile(r.projMapJson, os.Stdin, mapping)
+		if err2 != nil {
+			return err2
 		}
-		r.projMap = projMap
+		r.projMap = mapping
 	} else {
 		fmt.Println("No mapping found for project")
 	}
@@ -308,7 +308,7 @@ func (r *etCommand) WriteResource(ymCtx *YamlContext) error {
 		return err
 	}
 	filePath := path.Join("generated", "maxcompute", ymCtx.Table.String(), "resource.yaml")
-	return WriteFile(filePath, content)
+	return cmdutil.WriteFileAndDir(filePath, []byte(content))
 }
 
 func GetContent(tmpl *template.Template, ctx *YamlContext) (string, error) {
@@ -319,32 +319,6 @@ func GetContent(tmpl *template.Template, ctx *YamlContext) (string, error) {
 	}
 
 	return buf.String(), nil
-}
-
-func WriteFile(filePath string, content string) error {
-	if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-		return err
-	}
-	fileSpec, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("error creating spec")
-	}
-	_, err = fileSpec.WriteString(content)
-	return err
-}
-
-func readJson(fileName string) (map[string]string, error) {
-	mapping := make(map[string]string)
-	content, err := cmdutil.ReadFile(fileName, os.Stdin)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(content, &mapping)
-	if err != nil {
-		return nil, err
-	}
-	return mapping, nil
 }
 
 type YamlContext struct {

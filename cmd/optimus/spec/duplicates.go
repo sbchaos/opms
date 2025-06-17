@@ -2,19 +2,20 @@ package spec
 
 import (
 	"fmt"
-	"io/fs"
-	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 
+	"github.com/sbchaos/opms/cmd/optimus/internal/io"
 	"github.com/sbchaos/opms/lib/config"
 )
 
 type Spec struct {
 	Name string `yaml:"name"`
 	Type string `yaml:"type"`
+}
+
+func (s Spec) SpecName() string {
+	return s.Name
 }
 
 type duplicatesCommand struct {
@@ -41,45 +42,7 @@ func (r *duplicatesCommand) RunE(_ *cobra.Command, _ []string) error {
 	jobNameMapping := map[string][]string{}
 	resourceNameMapping := map[string][]string{}
 
-	walker := func(path string, d fs.DirEntry, _ error) error {
-		if d.IsDir() {
-			return nil
-		}
-
-		jobYaml := false
-		resourceYaml := false
-
-		fileName := filepath.Base(path)
-		switch fileName {
-		case "job.yaml", "job.yml":
-			jobYaml = true
-		case "resource.yaml", "resource.yml":
-			resourceYaml = true
-		}
-
-		if !jobYaml && !resourceYaml {
-			return nil
-		}
-
-		spec, err := readSpec[Spec](path)
-		if err != nil {
-			fmt.Printf("Unable to read spec for %s: %s", path, err)
-		}
-
-		if spec.Name == "" {
-			return nil
-		}
-
-		if jobYaml {
-			jobNameMapping[spec.Name] = append(jobNameMapping[spec.Name], path)
-		} else if resourceYaml {
-			resourceNameMapping[spec.Name] = append(resourceNameMapping[spec.Name], path)
-		}
-
-		return nil
-	}
-
-	err := filepath.WalkDir(r.dir, walker)
+	err := io.Walk[Spec](r.dir, jobNameMapping, resourceNameMapping)
 	if err != nil {
 		fmt.Printf("Unable to walk dir %s: %s", r.dir, err)
 	}
@@ -103,19 +66,4 @@ func (r *duplicatesCommand) RunE(_ *cobra.Command, _ []string) error {
 	}
 
 	return nil
-}
-
-func readSpec[T any](filePath string) (T, error) {
-	var spec T
-	fileSpec, err := os.Open(filePath)
-	if err != nil {
-		return spec, fmt.Errorf("error opening spec under [%s]: %w", filePath, err)
-	}
-	defer fileSpec.Close()
-
-	if err = yaml.NewDecoder(fileSpec).Decode(&spec); err != nil {
-		return spec, fmt.Errorf("error decoding spec under [%s]: %w", filePath, err)
-	}
-
-	return spec, nil
 }
