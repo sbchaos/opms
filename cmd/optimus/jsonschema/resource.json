@@ -21,6 +21,9 @@
             "type": "string"
           },
           "type": "object"
+        },
+        "spec": {
+          "type": "object"
         }
       },
       "allOf": [
@@ -330,8 +333,7 @@
         }
       },
       "required": [
-        "type",
-        "content_type"
+        "type"
       ],
       "additionalProperties": false,
       "type": "object"
