@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/goto/optimus/client/local/model/presets-map",
+  "$ref": "#/$defs/PresetsMap",
+  "$defs": {
+    "JobSpecTaskWindow": {
+      "properties": {
+        "size": {
+          "type": "string"
+        },
+        "offset": {
+          "type": "string"
+        },
+        "truncate_to": {
+          "type": "string"
+        },
+        "preset": {
+          "type": "string"
+        },
+        "shift_by": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "oneOf": [
+        {
+          "required": [
+            "size"
+          ]
+        },
+        {
+          "required": [
+            "preset"
+          ]
+        }
+      ]
+    },
+    "Preset": {
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "window": {
+          "$ref": "#/$defs/JobSpecTaskWindow"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "window"
+      ]
+    },
+    "PresetsMap": {
+      "properties": {
+        "presets": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Preset"
+          },
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "presets"
+      ]
+    }
+  }
+}
