@@ -14,7 +14,12 @@
         },
         "type": {
           "type": "string",
-          "enum": ["table", "view", "external_table", "schema"]
+          "enum": [
+            "table",
+            "view",
+            "external_table",
+            "schema"
+          ]
         },
         "labels": {
           "additionalProperties": {
@@ -30,7 +35,9 @@
         {
           "if": {
             "properties": {
-              "type": {"const": "table"}
+              "type": {
+                "const": "table"
+              }
             }
           },
           "then": {
@@ -44,7 +51,9 @@
         {
           "if": {
             "properties": {
-              "type": {"const": "view"}
+              "type": {
+                "const": "view"
+              }
             }
           },
           "then": {
@@ -58,7 +67,9 @@
         {
           "if": {
             "properties": {
-              "type": {"const": "schema"}
+              "type": {
+                "const": "schema"
+              }
             }
           },
           "then": {
@@ -72,7 +83,9 @@
         {
           "if": {
             "properties": {
-              "type": {"const": "external_table"}
+              "type": {
+                "const": "external_table"
+              }
             }
           },
           "then": {
@@ -293,7 +306,11 @@
             },
             "odps.sql.text.schema.mismatch.mode": {
               "type": "string",
-              "enum": ["truncate", "ignore", "error"]
+              "enum": [
+                "truncate",
+                "ignore",
+                "error"
+              ]
             }
           },
           "additionalProperties": {
@@ -351,8 +368,46 @@
         },
         "type": {
           "type": "string",
-          "enum": ["BOOLEAN","TINYINT","SMALLINT","INT","BIGINT","BINARY","FLOAT","DOUBLE","DECIMAL","VARCHAR","CHAR","STRING","DATE","DATETIME","TIMESTAMP","TIMESTAMP_NTZ","INTERVAL",
-            "boolean","tinyint","smallint","int","bigint","binary","float","double","decimal","varchar","char","string","date","datetime","timestamp","timestamp_ntz","interval"]
+          "enum": [
+            "BOOLEAN",
+            "TINYINT",
+            "SMALLINT",
+            "INT",
+            "BIGINT",
+            "BINARY",
+            "FLOAT",
+            "DOUBLE",
+            "DECIMAL",
+            "VARCHAR",
+            "CHAR",
+            "STRING",
+            "DATE",
+            "DATETIME",
+            "TIMESTAMP",
+            "TIMESTAMP_NTZ",
+            "INTERVAL",
+            "ARRAY",
+            "STRUCT",
+            "boolean",
+            "tinyint",
+            "smallint",
+            "int",
+            "bigint",
+            "binary",
+            "float",
+            "double",
+            "decimal",
+            "varchar",
+            "char",
+            "string",
+            "date",
+            "datetime",
+            "timestamp",
+            "timestamp_ntz",
+            "interval",
+            "array",
+            "struct"
+          ]
         },
         "description": {
           "type": "string"
@@ -407,7 +462,6 @@
         }
       },
       "required": [
-        "name",
         "type"
       ],
       "additionalProperties": false,

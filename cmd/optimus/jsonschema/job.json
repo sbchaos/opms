@@ -90,12 +90,10 @@
     "JobSpecBehaviorNotifier": {
       "properties": {
         "on": {
-          "type": "string"
+          "type": "string",
+          "enum": ["sla_miss", "failure", "job_success", "replay_lifecycle"]
         },
         "config": {
-          "additionalProperties": {
-            "type": "string"
-          },
           "type": "object"
         },
         "channels": {
@@ -105,7 +103,8 @@
           "type": "array"
         },
         "severity": {
-          "type": "string"
+          "type": "string",
+          "enum": ["INFO", "WARNING", "CRITICAL", "info", "warning", "critical"]
         },
         "team": {
           "type": "string"
@@ -154,8 +153,7 @@
     "JobSpecDependency": {
       "properties": {
         "job": {
-          "type": "string",
-          "pattern": "^([a-zA-Z0-9_]+)[.](.+)$"
+          "type": "string"
         },
         "type": {
           "type": "string"
@@ -235,11 +233,7 @@
         }
       },
       "additionalProperties": false,
-      "type": "object",
-      "required": [
-        "pool",
-        "queue"
-      ]
+      "type": "object"
     },
     "JobSpecMetadataResource": {
       "properties": {
@@ -259,7 +253,7 @@
           "type": "string"
         },
         "cpu": {
-          "type": "string"
+          "type": ["string", "integer"]
         }
       },
       "additionalProperties": false,
@@ -311,21 +305,28 @@
       ]
     },
     "JobSpecTaskWindow": {
+      "description": "Configure the data consumption window for job",
       "properties": {
         "size": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^-?\\d+[hdwMy]$",
+          "description": "Size of the data window"
         },
         "truncate_to": {
-          "type": "string"
+          "type": "string",
+          "enum": [ "h", "d","w", "M", "y", "None"]
         },
         "preset": {
           "type": "string"
         },
         "shift_by": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^-?\\d+[hdwMy]$",
+          "description": "Size of the data window"
         },
         "location": {
-          "type": "string"
+          "type": "string",
+          "description": "IANA country location codes like Asia/Jakarta"
         }
       },
       "oneOf" : [{
