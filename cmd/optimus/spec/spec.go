@@ -15,7 +15,6 @@ func NewSpecCommand(cfg *config.Config) *cobra.Command {
 
 	cmd.AddCommand(
 		NewDuplicatesCommand(cfg),
-		NewEndDateCommand(cfg),
 	)
 	return cmd
 }
