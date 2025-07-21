@@ -280,8 +280,7 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": [	 "GOOGLE_SHEETS", "GOOGLE_DRIVE", "LARK_SHEET", "OSS"]
-
+          "enum": ["GOOGLE_SHEETS", "GOOGLE_DRIVE", "LARK_SHEET", "OSS"]
         },
         "content_type": {
           "type": "string",
