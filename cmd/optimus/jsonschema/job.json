@@ -125,7 +125,7 @@
           "type": "integer"
         },
         "delay": {
-          "type": "integer",
+          "type": "string",
           "description": "Delay duration"
         },
         "exponential_backoff": {
