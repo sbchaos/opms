@@ -13,7 +13,8 @@
           "type": "string"
         },
         "owner": {
-          "type": "string"
+          "type": "string",
+          "description": "Team or individual owning this job"
         },
         "description": {
           "type": "string"
@@ -91,7 +92,8 @@
       "properties": {
         "on": {
           "type": "string",
-          "enum": ["sla_miss", "failure", "job_success", "replay_lifecycle"]
+          "enum": ["sla_miss", "failure", "job_success", "replay_lifecycle"],
+          "description": "Job event for which we want to be notified"
         },
         "config": {
           "type": "object"
@@ -107,7 +109,8 @@
           "enum": ["INFO", "WARNING", "CRITICAL", "info", "warning", "critical"]
         },
         "team": {
-          "type": "string"
+          "type": "string",
+          "description": "Team which will receive these alerts"
         }
       },
       "additionalProperties": false,
@@ -122,7 +125,8 @@
           "type": "integer"
         },
         "delay": {
-          "type": "integer"
+          "type": "integer",
+          "description": "Delay duration"
         },
         "exponential_backoff": {
           "type": "boolean"
@@ -199,7 +203,8 @@
           "type": "string"
         },
         "version": {
-          "type": "string"
+          "type": "string",
+          "description": "Version of plugin to use, use empty for default"
         },
         "config": {
           "type": "object"
@@ -289,7 +294,8 @@
           "type": "string"
         },
         "version": {
-          "type": "string"
+          "type": "string",
+          "description": "Version of plugin to use, use empty for default"
         },
         "config": {
           "type": "object"

@@ -55,7 +55,9 @@
     "Datastore": {
       "properties": {
         "type": {
-          "type": "string"
+          "type": "string",
+          "enum": ["bigquery", "maxcompute"],
+          "description": "Datawarehouse to use for resources"
         },
         "path": {
           "type": "string"
